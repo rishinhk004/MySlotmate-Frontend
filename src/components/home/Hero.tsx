@@ -2,8 +2,8 @@ import React from "react";
 import HeroCard from "./HeroCard";
 const Hero: React.FC = () => {
     return (
-        <div className="flex flex-col md:flex-row text-[#000000]">
-            <div className="flex flex-col">
+        <div className="w-full justify-center gap-[10rem] items-center flex flex-col lg:flex-row text-[#000000]">
+            <div className="flex flex-col scale-100 lg:scale-160">
                 <h1 className="text-2xl font-bold text-center md:text-left">Book People's<br /><span className="text-[#0094CA]">Time.</span></h1>
                 <p className="text-sm text-center text-[#606060] md:text-left mb-4">Pick an interest. Meet someone who shares it.</p>
                 <div className="flex flex-row gap-0.5 justify-center text-semibold">
@@ -19,13 +19,15 @@ const Hero: React.FC = () => {
                 </div>
             </div>
             <div className='flex flex-col items-center justify-center'>
-                <HeroCard
-                    photo="/assets/home/heropic1.png"
-                    type="Adventure"
-                    title="Mountain Trekking"
-                    description="Explore the breathtaking mountain trails with our expert guides."
-                    duration="2 days"
-                />
+                <div className="lg:translate-x-[10rem] lg:translate-y-[1rem]">
+                    <HeroCard
+                        photo="/assets/home/heropic1.png"
+                        type="Adventure"
+                        title="Mountain Trekking"
+                        description="Explore the breathtaking mountain trails with our expert guides."
+                        duration="2 days"
+                    />
+                </div>
                 <HeroCard
                     photo="/assets/home/heropic2.png"
                     type="Adventure"
@@ -33,13 +35,15 @@ const Hero: React.FC = () => {
                     description="Dive into the vibrant underwater world with our certified instructors."
                     duration="1 day"
                 />
-                <HeroCard
-                    photo="/assets/home/heropic3.png"
-                    type="Chill"
-                    title="Urban Photography Walk"
-                    description="Capture the essence of the city with our expert photography guides."
-                    duration="4 hours"
-                />
+                <div className="lg:translate-x-[10rem] lg:translate-y-[-1rem]">
+                    <HeroCard
+                        photo="/assets/home/heropic3.png"
+                        type="Chill"
+                        title="Urban Photography Walk"
+                        description="Capture the essence of the city with our expert photography guides."
+                        duration="4 hours"
+                    />
+                </div>
             </div>
         </div>
     );
