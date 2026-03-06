@@ -38,6 +38,8 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      <components.Home.Idea/>
+      <components.Home.Footer/>
     </main>
   );
 }
