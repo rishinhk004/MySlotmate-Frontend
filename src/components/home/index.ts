@@ -1,4 +1,5 @@
 import Hero from "./Hero";
 import people from "./people";
 import Trending from "./Trending";
-export {Hero,people,Trending};
+import Banner from "./Banner";
+export {Hero,people,Trending,Banner};

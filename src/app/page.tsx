@@ -16,6 +16,7 @@ export default function HomePage() {
         </div>
       </div>
       <components.Home.Trending/>
+      <components.Home.Banner/>
     </main>
   );
 }
