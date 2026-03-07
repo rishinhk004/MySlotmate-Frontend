@@ -1,6 +1,6 @@
 const Banner = () => {
     return (
-        <section className="w-full bg-transparent py-8 px-4 sm:px-6 lg:px-12 text-[#000000]">
+        <section className="w-full bg-[#bdedff80] py-8 px-4 sm:px-6 lg:px-12 text-[#000000]">
             <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
                 <div className="w-full lg:w-1/2 flex items-center justify-center">
                     <img
@@ -11,14 +11,14 @@ const Banner = () => {
                 </div>
 
                 <div className="flex flex-col md:flex-row items-center justify-center">
-                    <div className="flex flex-col justify-center items-center">
-                        <h1>Earn with <br/> MySlotMate</h1>
-                        <button>List Your Time</button>
+                    <div className="flex flex-col justify-center items-center text-2xl font-semibold gap-4">
+                        <h1 className="text-center">Earn with <br/> <span className="text-[#0094CA]">MySlotMate</span></h1>
+                        <button className="bg-[#0094CA] text-[#ffffff] py-2 px-4 rounded-md">List Your Time</button>
                     </div>
-                    <div className="flex flex-col items-center justify-center">
-                        <h1>Host Meaningful experiences</h1>
-                        <h1>Earn Per slot</h1>
-                        <h1>Build your local community</h1>
+                    <div className="flex flex-col items-start justify-center font-semibold text-sm gap-2 mt-4 md:mt-0 md:ml-8">
+                        <h1 className="flex flex-row items-center justify-center"><img src="/assets/home/celebration.svg" alt="Check" className="h-[1rem] w-[1rem] mr-2" /><span>Host Meaningful experiences</span></h1>
+                        <h1 className="flex flex-row items-center justify-center"><img src="/assets/home/payments.svg" alt="Check" className="h-[1rem] w-[1rem] mr-2" /><span>Earn Per slot</span></h1>
+                        <h1 className="flex flex-row items-center justify-center"><img src="/assets/home/group_add.svg" alt="Check" className="h-[1rem] w-[1rem] mr-2" /><span>Build your local community</span></h1>
                     </div>
                 </div>
             </div>
