@@ -3,12 +3,12 @@ import { FaLinkedin, FaFacebookF, FaTwitter } from 'react-icons/fa';
 
 const Footer = () => {
     return (
-        <div className="flex flex-col items-center justify-center rounded-t-2xl" style={{background: "linear-gradient(180deg, rgba(0, 148, 202, 0.1) 0%, rgba(255, 255, 255, 0.1) 100.13%)"}}>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-                <div className="flex flex-col items-center justify-center text-[#1A1919] text-center">
-                    <img src="/assets/home/logo.png" alt="Logo" className="scale-50" />
-                    <h1>+91 9876543210</h1>
-                    <h1>support@myslotmate.com</h1>
+        <div className="p-7 flex flex-col items-center w-full justify-around rounded-t-2xl" style={{background: "linear-gradient(180deg, rgba(0, 148, 202, 0.1) 0%, rgba(255, 255, 255, 0.1) 100.13%)"}}>
+            <div className="flex flex-col md:flex-row items-center justify-around w-full gap-1">
+                <div className="flex flex-col items-center md:items-start justify-center text-[#1A1919] text-center md:text-left md:w-40 flex-shrink-0">
+                    <img src="/assets/home/logo.png" alt="Logo" className="h-12 w-auto mb-2" />
+                    <p className="text-sm">+91 9876543210</p>
+                    <p className="text-sm">support@myslotmate.com</p>
                 </div>
                 <div className="flex flex-col items-center justify-center">
                     <h1 className="text-sm">Quick Links</h1>
