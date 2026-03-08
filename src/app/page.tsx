@@ -6,6 +6,7 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <main className="overflow-hidden flex min-h-screen flex-col gap-[4rem] items-center justify-center bg-linear-to-b from-[#e4f8ff] to-[rgba(0, 148, 202, 0)] text-[#000000]">
+      <components.Navbar />
       <components.Home.Hero />
       <components.Home.people />
       <div className="flex flex-col items-center justify-center w-full mt-8">
