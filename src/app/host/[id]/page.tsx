@@ -12,6 +12,8 @@ import {
 import { Navbar } from "~/components";
 import { FiChevronRight } from "react-icons/fi";
 
+export const runtime = "edge";
+
 export default function HostProfilePage() {
   // TODO: replace with API call using params.id
   const profile = dummyHostPublicProfile;
@@ -25,7 +27,7 @@ export default function HostProfilePage() {
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <nav className="mb-6 flex items-center gap-1 text-sm text-gray-400">
-          <a href="/" className="hover:text-[#0094CA]">
+          <a href="#" className="hover:text-[#0094CA]">
             Home
           </a>
           <FiChevronRight className="h-3 w-3" />
