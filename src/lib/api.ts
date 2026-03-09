@@ -5,7 +5,6 @@
 import axios, { type AxiosError } from "axios";
 import { env } from "~/env";
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const BASE: string = env.NEXT_PUBLIC_API_URL;
 
 export interface Envelope<T> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use } from "react";
 import {
   ProfileHeader,
   PhotoGallery,
@@ -32,7 +32,7 @@ export default function HostProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id: hostId } = use(params);
+  const { id: _hostId } = use(params);
 
   // TODO: Replace with API call once GET /hosts/{hostID} endpoint is added
   const profile = dummyHostPublicProfile;

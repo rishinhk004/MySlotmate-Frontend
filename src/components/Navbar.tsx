@@ -67,7 +67,7 @@ export default function Navbar() {
 
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left: Logo */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0">{/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/assets/home/logo.png"
               alt="Myslotmate"
@@ -101,6 +101,7 @@ export default function Navbar() {
                   onClick={() => setProfileOpen(!profileOpen)}
                   className="flex cursor-pointer items-center gap-2 rounded-full border-2 border-[#0094CA] p-0.5 transition hover:shadow-md"
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
                     alt={user.displayName ?? "Profile"}
@@ -148,6 +149,7 @@ export default function Navbar() {
 
                     {/* User info */}
                     <div className="flex items-center gap-4 px-5 py-5">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
                         alt=""
@@ -366,6 +368,7 @@ export default function Navbar() {
                 }}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 transition"
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
                   alt=""

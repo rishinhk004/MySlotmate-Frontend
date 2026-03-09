@@ -6,17 +6,12 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "~/utils/firebase";
 import { HostNavbar } from "~/components/host-dashboard";
 import {
-  FiUploadCloud,
   FiX,
   FiEdit2,
-  FiPlus,
   FiCheck,
-  FiExternalLink,
 } from "react-icons/fi";
 import {
   LuShieldCheck,
-  LuMail,
-  LuPhone,
   LuBadgeCheck,
   LuStar,
   LuUsers,
@@ -303,7 +298,7 @@ export default function HostProfileEditPage() {
               </div>
 
               {/* Avatar */}
-              <div className="mt-6 flex items-center gap-5">
+              <div className="mt-6 flex items-center gap-5">{/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={form.avatarUrl}
                   alt="Avatar"
