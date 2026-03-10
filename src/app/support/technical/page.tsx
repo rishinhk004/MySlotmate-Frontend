@@ -2,40 +2,50 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiSearch } from "react-icons/fi";
 
-interface FAQItem {
+interface CommonTopic {
   id: number;
-  question: string;
-  answer: string;
+  logo:string;
+  title: string;
+  description: string;
 }
-
-const faqItems: FAQItem[] = [
+const commonTopics: CommonTopic[] = [
   {
     id: 1,
-    question: "I'm experiencing audio/video issues. What should I do?",
-    answer:
-      "First, check your internet connection and ensure both your camera and microphone are enabled. Try refreshing the page or restarting the app. If issues persist, clear your browser cache and try a different browser.",
+    logo: "/assets/support/video_camera_front.svg",
+    title: "Session & Meeting",
+    description: "Audio/video quality, connection drops, and recording issues.", 
   },
   {
-    id: 2,
-    question: "How do I troubleshoot connection problems?",
-    answer:
-      "Connection issues are often due to poor internet. Try moving closer to your WiFi router, closing other bandwidth-heavy applications, or switching to a wired connection if possible.",
+    id: 2,  
+    logo: "/assets/support/calendar_today.svg",
+    title: "Booking Problems",
+    description: "Calendar sync errors, double bookings, and cancellations.",
   },
   {
     id: 3,
-    question: "The app keeps crashing. How can I fix this?",
-    answer:
-      "Try updating the app to the latest version from your app store. If you're using web, clear your browser cache. Ensure your device has sufficient storage space available.",
+    logo: "/assets/support/currency_rupee_circle.svg",
+    title: "Payment & Payout",
+    description: "Withdrawal delays, tax documents, and invoice disputes.",
   },
   {
     id: 4,
-    question: "I can't find a feature. Where is it?",
-    answer:
-      "Check if you're using the latest version of the app. Features may have moved or been redesigned. Our support team can walk you through the interface.",
-  },
-];
+    logo: "/assets/support/space_dashboard.svg",
+    title: "Dashboard Errors",
+    description: "Login issues, broken analytics, or interface bugs.",
+  }];
+const CommonTopicsCard=({ topic }: { topic: CommonTopic })=>{
+  return (
+    <div className="flex flex-col items-start justify-start gap-3 bg-[#ffffff] shadow-sm shadow-[#6d6d6d6b] rounded-lg p-4 w-full">
+      <div className="flex flex-col items-start justify-center gap-2">
+        <img src={topic.logo} alt={`${topic.title} logo`} className="w-8 h-8" />
+        <h3 className="text-md sm:text-lg font-semibold text-gray-900">{topic.title}</h3>
+      </div>
+      <p className="text-gray-500 text-sm">{topic.description}</p>
+    </div>
+  )
+}
 
 export default function TechnicalSupportPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -59,80 +69,41 @@ export default function TechnicalSupportPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#e4f8ff] to-white">
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-4xl mx-auto w-full">
         {/* Back Button */}
-        <Link
-          href="/support"
-          className="inline-flex items-center gap-2 text-[#0094CA] hover:text-[#007dab] mb-6 font-medium"
-        >
-          <FiArrowLeft className="h-5 w-5" />
-          Back to Support
-        </Link>
-
+        <div className="flex flex-row items-center justify-start gap-2 mb-12">
+          <Link
+            href="/support"
+            className="inline-flex items-center gap-2 text-[#717171] font-medium"
+          >
+            Support & Safety&gt;
+          </Link>
+          <span className="text-[#000000] text-sm font-medium">Technical Support</span>
+        </div>
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            Technical Support
+        <div className="mb-12 flex flex-col items-center gap-2 justify-center">
+          <h1 className="text-2xl sm:text-4xl font-semibold text-gray-900 mb-2">
+            How can we help you today?
           </h1>
-          <p className="text-gray-600">
-            Get help with connection, audio/video, and app issues.
+          <p className="text-gray-400">
+            Find answers, troubleshoot issues, or connect with our specialized support team for hosts.
           </p>
         </div>
 
-        {/* FAQ Section */}
-        <section className="mb-12">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
-            Frequently Asked Questions
+        <div className="flex flex-col items-center justify-center">
+          <div className="flex flex-row items-center justify-center bg-[#ffffff] shadow-sm shadow-[#6d6d6d6b] rounded-full w-full md:w-[80%] lg:w-[60%]">
+            <FiSearch color="#0094CA" size={20} className="ml-3" />
+            <input type="text" placeholder="Search for articles, errors or anything you need..." className="rounded-lg py-2 px-4 text-[#474956] border-0 bg-transparent outline-0 w-full" />
+          </div>
+        </div>
+        <section>
+          <h2 className="text-[#000000] font-semibold text-md sm:text-xl">
+            Common Topics
           </h2>
-          <div className="space-y-3">
-            {faqItems.map((item) => (
-              <div
-                key={item.id}
-                className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition"
-              >
-                <button
-                  onClick={() => handleFAQToggle(item.id)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-                >
-                  <span className="font-semibold text-gray-900 text-left">
-                    {item.question}
-                  </span>
-                  <span className="text-[#0094CA] font-bold">
-                    {expandedId === item.id ? "−" : "+"}
-                  </span>
-                </button>
-                {expandedId === item.id && (
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <p className="text-gray-700 leading-relaxed">{item.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+            {commonTopics.map((topic) => (
+              <CommonTopicsCard key={topic.id} topic={topic} />
+            ))} 
           </div>
         </section>
-
-        {/* Quick Fixes */}
-        <section className="mb-12">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
-            Quick Troubleshooting Tips
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { icon: "🔄", title: "Restart", desc: "Close and reopen the app" },
-              { icon: "📶", title: "Internet", desc: "Check your WiFi connection" },
-              { icon: "🔌", title: "Permissions", desc: "Allow camera/mic access" },
-              { icon: "🗑️", title: "Cache", desc: "Clear browser data" },
-            ].map((tip, idx) => (
-              <div
-                key={idx}
-                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-              >
-                <div className="text-2xl mb-2">{tip.icon}</div>
-                <h3 className="font-semibold text-gray-900">{tip.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">{tip.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* Contact Support Form */}
         <section>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">

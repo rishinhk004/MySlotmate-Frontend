@@ -249,13 +249,13 @@ export default function ReportIssuePage() {
             </div>
             {/* Submit Button */}
             <div className="flex flex-col md:flex-row gap-3 pt-4 w-full">
-              <p className="text-[#626060] w-full md:w-[60%]">
+              <div className="text-[#626060] w-full md:w-[60%]">
                 <span className="flex flex-row items-center justify-start">
                   <img src="/assets/support/lock.svg" alt="lock" />
                   <h3>Review Process</h3>
                 </span><br/>
                 We aim to review all reports within 24 hours. If you are in immediate danger, please contact local authorities.
-              </p>
+              </div>
               <button
                 type="submit"
                 className="flex-1 px-6 py-3 bg-[#0094CA] text-white font-semibold rounded-lg hover:bg-[#007dab] transition w-full md:w-[40%]"
