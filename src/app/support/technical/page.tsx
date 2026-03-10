@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { FiArrowLeft, FiSearch } from "react-icons/fi";
 
@@ -48,12 +48,60 @@ const CommonTopicsCard=({ topic }: { topic: CommonTopic })=>{
 }
 
 export default function TechnicalSupportPage() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const [contactDetails, setContactDetails] = useState({
-    name: "",
-    email: "",
-    issue: "",
+    issueCategory: "session",
+    selectedExperience: "",
+    priorityLevel: "medium",
+    description: "",
+    attachments: null as File | null,
   });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    setContactDetails({
+      ...contactDetails,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setContactDetails({
+        ...contactDetails,
+        attachments: file,
+      });
+      toast.success(`File "${file.name}" uploaded successfully`);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setContactDetails({
+        ...contactDetails,
+        attachments: file,
+      });
+      toast.success(`File "${file.name}" uploaded successfully`);
+    }
+  };
 
   const handleFAQToggle = (id: number) => {
     setExpandedId(expandedId === id ? null : id);
@@ -62,7 +110,16 @@ export default function TechnicalSupportPage() {
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Your request has been submitted. We'll get back to you soon!");
-    setContactDetails({ name: "", email: "", issue: "" });
+    setContactDetails({
+      issueCategory: "session",
+      selectedExperience: "",
+      priorityLevel: "medium",
+      description: "",
+      attachments: null,
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -105,60 +162,138 @@ export default function TechnicalSupportPage() {
           </div>
         </section>
         {/* Contact Support Form */}
+        <div className="flex items-center gap-4 my-8">
+          <hr className="flex-1 border-t border-gray-300" />
+          <span className="text-gray-600 font-semibold whitespace-nowrap">STILL NEED HELP?</span>
+          <hr className="flex-1 border-t border-gray-300" />
+        </div>
+
         <section>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">
-            Still Having Issues?
-          </h2>
+          <div className="flex flex-row items-center justify-around">
+            <div className="flex flex-col items-start justify-center">
+              <h2 className="text-[#000000] font-semibold text-md sm:text-xl">Submit a Request</h2>
+              <p className="text-gray-500 mt-2">
+                Our technical team typically responds within 2 hours.
+              </p>
+            </div>
+            <div className="flex flex-row items-center justify-center bg-[#DCFCE7] text-[#166534]">
+              <span className="text-[#22C55E] font-extrabold text-xl">.</span>
+              <span className="text-sm font-medium">System Operational</span>
+            </div>
+          </div>
           <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6 sm:p-8">
             <form onSubmit={handleContactSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  value={contactDetails.name}
-                  onChange={(e) =>
-                    setContactDetails({ ...contactDetails, name: e.target.value })
-                  }
-                  placeholder="Your name"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0094CA] focus:ring-1 focus:ring-[#0094CA]"
-                  required
-                />
+              {/* Row 1: Issue Category & Which Experience */}
+              <div className="flex flex-col md:flex-row gap-6 w-full">
+                <div className="w-full md:w-[50%]">
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Issue Category
+                  </label>
+                  <select
+                    name="issueCategory"
+                    value={contactDetails.issueCategory}
+                    onChange={handleChange}
+                    className="w-full h-[3rem] px-4 py-2.5 rounded-lg outline-none bg-[#F8FAFC] border border-gray-300"
+                  >
+                    <option value="session">Session & Meeting</option>
+                    <option value="booking">Booking Problems</option>
+                    <option value="payment">Payment & Payout</option>
+                    <option value="dashboard">Dashboard Errors</option>
+                  </select>
+                </div>
+                <div className="w-full md:w-[50%]">
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Which Experience
+                  </label>
+                  <select
+                    name="selectedExperience"
+                    value={contactDetails.selectedExperience}
+                    onChange={handleChange}
+                    className="w-full h-[3rem] px-4 py-2.5 rounded-lg outline-none bg-[#F8FAFC] border border-gray-300"
+                  >
+                    <option value="">Select an experience</option>
+                    <option value="exp1">Experience 1</option>
+                    <option value="exp2">Experience 2</option>
+                    <option value="exp3">Experience 3</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Email
+              {/* Row 2: Priority Level */}
+              <div className="flex flex-col items-start justify-center">
+                <label className="block text-sm font-semibold text-gray-900 mb-4">
+                  Priority Level
                 </label>
-                <input
-                  type="email"
-                  value={contactDetails.email}
-                  onChange={(e) =>
-                    setContactDetails({ ...contactDetails, email: e.target.value })
-                  }
-                  placeholder="your@email.com"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0094CA] focus:ring-1 focus:ring-[#0094CA]"
-                  required
-                />
+                <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {["Low", "Medium", "Critical"].map((level) => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setContactDetails({ ...contactDetails, priorityLevel: level.toLowerCase() })}
+                      className={`px-4 py-3 rounded-lg font-medium transition ${
+                        contactDetails.priorityLevel === level.toLowerCase()
+                          ? "bg-[#0094CA] text-white border-2 border-[#0094CA]"
+                          : "bg-[#F8FAFC] text-gray-900 border-2 border-gray-300 hover:border-[#0094CA]"
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* Row 3: Description */}
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Issue Description
+                  Description
                 </label>
                 <textarea
-                  value={contactDetails.issue}
-                  onChange={(e) =>
-                    setContactDetails({ ...contactDetails, issue: e.target.value })
-                  }
+                  name="description"
+                  value={contactDetails.description}
+                  onChange={handleChange}
                   placeholder="Describe your technical issue in detail"
                   rows={4}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#0094CA] focus:ring-1 focus:ring-[#0094CA] resize-none"
+                  className="w-full px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#0094CA] focus:ring-1 focus:ring-[#0094CA] resize-none bg-[#F8FAFC] border border-gray-300"
                   required
                 />
               </div>
 
+              {/* Row 4: Attachments */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Attachments <span className="text-[#5f5e5e]">(Optional)</span>
+                </label>
+                <div
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center gap-4 border-2 border-dashed rounded-lg p-8 cursor-pointer transition ${
+                    dragActive
+                      ? "border-[#0094CA] bg-blue-50"
+                      : "border-gray-300 bg-[#F8FAFC] hover:border-[#0094CA]"
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileChange}
+                    accept=".svg,.png,.jpg,.jpeg,.pdf"
+                    className="hidden"
+                  />
+                  <img src="/assets/support/upload.svg" alt="Upload button" className="w-12 h-12" />
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-gray-900">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-600">SVG, PNG, JPG or PDF (max. 10MB)</p>
+                  </div>
+                  {contactDetails.attachments && (
+                    <p className="text-xs text-green-600 font-medium">{contactDetails.attachments.name}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
