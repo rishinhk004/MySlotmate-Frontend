@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import * as api from "~/lib/api";
 
 /* ═══ Query Keys ═══════════════════════════════════════════════ */
@@ -49,14 +49,50 @@ export function useMyProfile(userId: string | null) {
   });
 }
 
-export function useApplicationStatus(userId: string | null) {
+export function useApplicationStatus(userId: string | null): UseQueryResult<Partial<api.HostDTO> | undefined> {
   return useQuery({
     queryKey: queryKeys.applicationStatus(userId ?? ""),
-    queryFn: () => api.getApplicationStatus(userId!),
+    queryFn: async () => {
+      try {
+        const result = await api.getApplicationStatus(userId!);
+        return result;
+      } catch (err) {
+        const error = err as Error & { status?: number };
+        const errorMsg = error?.message ?? "";
+        const status = error?.status;
+        
+        // If it's a 404 (not found), it means no application exists yet
+        if (status === 404) {
+          return {
+            success: false,
+            data: undefined,
+            error: "No application found",
+          } as unknown as api.Envelope<api.HostDTO>;
+        }
+        
+        // For any other error, if it contains "application" or "already", 
+        // it might mean application exists but there's an issue fetching it
+        if (errorMsg.toLowerCase().includes("application") || errorMsg.toLowerCase().includes("already")) {
+          return {
+            success: true,
+            data: {
+              id: userId ?? "",
+              application_status: "pending" as const,
+            } satisfies Partial<api.HostDTO>,
+          } as api.Envelope<api.HostDTO>;
+        }
+        
+        // Re-throw other errors
+        throw err;
+      }
+    },
     enabled: !!userId,
-    staleTime: 60 * 1000,
-    select: (res) => res.data,
-    retry: false, // 404 = no host application yet
+    staleTime: 30 * 1000,
+    select: (res) => {
+      const extracted = res?.data;
+      return extracted;
+    },
+    retry: false,
   });
 }
 
@@ -108,11 +144,11 @@ export function usePublicHostProfile(hostId: string | null) {
   });
 }
 
-export function useHostDashboard(hostId: string | null) {
+export function useHostDashboard(hostId: string | null, userId: string | null) {
   return useQuery({
     queryKey: queryKeys.hostDashboard(hostId ?? ""),
-    queryFn: () => api.getHostDashboard(hostId!),
-    enabled: !!hostId,
+    queryFn: () => api.getHostDashboard(hostId!, userId!),
+    enabled: !!hostId && !!userId,
     staleTime: 60 * 1000,
     select: (res) => res.data,
   });
@@ -417,6 +453,9 @@ export function useCreateEvent() {
       void qc.invalidateQueries({
         queryKey: queryKeys.eventsByHost(variables.host_id),
       });
+      void qc.invalidateQueries({
+        queryKey: queryKeys.calendarEvents(variables.host_id),
+      });
     },
   });
 }
@@ -443,9 +482,10 @@ export function usePublishEvent() {
   return useMutation({
     mutationFn: ({ eventId, hostId }: { eventId: string; hostId: string }) =>
       api.publishEvent(eventId, hostId),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["eventsByHost"] });
-      void qc.invalidateQueries({ queryKey: ["event"] });
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.eventsByHost(variables.hostId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.calendarEvents(variables.hostId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.event(variables.eventId) });
     },
   });
 }
@@ -455,9 +495,10 @@ export function usePauseEvent() {
   return useMutation({
     mutationFn: ({ eventId, hostId }: { eventId: string; hostId: string }) =>
       api.pauseEvent(eventId, hostId),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["eventsByHost"] });
-      void qc.invalidateQueries({ queryKey: ["event"] });
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.eventsByHost(variables.hostId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.calendarEvents(variables.hostId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.event(variables.eventId) });
     },
   });
 }
@@ -467,9 +508,10 @@ export function useResumeEvent() {
   return useMutation({
     mutationFn: ({ eventId, hostId }: { eventId: string; hostId: string }) =>
       api.resumeEvent(eventId, hostId),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["eventsByHost"] });
-      void qc.invalidateQueries({ queryKey: ["event"] });
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.eventsByHost(variables.hostId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.calendarEvents(variables.hostId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.event(variables.eventId) });
     },
   });
 }

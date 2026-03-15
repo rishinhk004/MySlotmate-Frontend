@@ -296,7 +296,9 @@ function SuccessModal({
 /* ------------------------------------------------------------------ */
 export default function CreateExperiencePage() {
   const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
   const [hostId, setHostId] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -327,19 +329,21 @@ export default function CreateExperiencePage() {
   });
 
   useEffect(() => {
+    setUserId(localStorage.getItem("msm_user_id"));
     setHostId(localStorage.getItem("msm_host_id"));
+    setIsHydrated(true);
   }, []);
 
-  const { data: host, isLoading: hostLoading } = useMyHost(hostId);
+  const { data: host, isLoading: hostLoading } = useMyHost(userId);
   const createEvent = useCreateEvent();
   const uploadFiles = useUploadFiles();
   const publishEvent = usePublishEvent();
 
   useEffect(() => {
-    if (!hostId && !hostLoading) {
-      router.push("/login");
+    if (isHydrated && !userId && !hostLoading) {
+      router.push("/");
     }
-  }, [hostId, hostLoading, router]);
+  }, [userId, hostLoading, router, isHydrated]);
 
   const updateForm = <K extends keyof FormData>(key: K, value: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));

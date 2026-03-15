@@ -66,8 +66,10 @@ export default function HostDashboardPage() {
   const [user] = useAuthState(auth);
   const firstName = user?.displayName?.split(" ")[0] ?? "Host";
 
+  const [userId, setUserId] = useState<string | null>(null);
   const [storedHostId, setStoredHostId] = useState<string | null>(null);
   useEffect(() => {
+    setUserId(localStorage.getItem("msm_user_id"));
     setStoredHostId(localStorage.getItem("msm_host_id"));
   }, []);
 
@@ -75,14 +77,23 @@ export default function HostDashboardPage() {
     data: dashboard,
     isLoading: loading,
     error: queryError,
-  } = useHostDashboard(storedHostId);
+    refetch,
+  } = useHostDashboard(storedHostId, userId);
 
   const { data: calendarEvents } = useCalendarEvents(storedHostId);
+
+  // Debug: log error details
+  useEffect(() => {
+    console.log("Dashboard Debug - User ID:", userId, "Host ID:", storedHostId);
+    if (queryError) {
+      console.error("Dashboard Error:", queryError);
+    }
+  }, [queryError, storedHostId, userId]);
 
   const error = !storedHostId
     ? "No host profile found. Please apply as a host first."
     : queryError
-      ? "Could not load dashboard. Using demo data."
+      ? `Could not load dashboard. ${queryError instanceof Error ? queryError.message : "Please try again."}`
       : "";
 
   /* Filter calendar events to today's schedule */
@@ -96,10 +107,10 @@ export default function HostDashboardPage() {
   }, [calendarEvents]);
 
   /* Build stats from API data or fallback */
-  const totalEarnings = dashboard
+  const totalEarnings = dashboard?.earnings
     ? `$${(dashboard.earnings.total_earnings_cents / 100).toLocaleString()}`
     : "$0";
-  const avgRating = dashboard?.host.avg_rating?.toFixed(1) ?? "–";
+  const avgRating = dashboard?.host?.avg_rating?.toFixed(1) ?? "–";
   const totalBookings = dashboard?.total_bookings ?? 0;
   const totalEvents = dashboard?.total_events ?? 0;
 
@@ -125,7 +136,7 @@ export default function HostDashboardPage() {
       label: "Total Earnings",
       value: totalEarnings,
       sub: ".00",
-      badge: dashboard ? `Pending $${(dashboard.earnings.pending_clearance_cents / 100).toFixed(0)}` : "",
+      badge: dashboard?.earnings ? `Pending $${(dashboard.earnings.pending_clearance_cents / 100).toFixed(0)}` : "",
       badgeColor: "bg-green-100 text-green-700",
     },
     {
@@ -133,7 +144,7 @@ export default function HostDashboardPage() {
       label: "Avg Rating",
       value: avgRating,
       sub: avgRating !== "–" ? "★★★★★" : "",
-      badge: `${dashboard?.host.total_reviews ?? 0} reviews`,
+      badge: `${dashboard?.host?.total_reviews ?? 0} reviews`,
       badgeColor: "bg-gray-100 text-gray-600",
     },
   ] as const;
@@ -152,8 +163,16 @@ export default function HostDashboardPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {error}
+          <div className="mb-4 flex items-center justify-between rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <span>{error}</span>
+            {queryError && (
+              <button
+                onClick={() => refetch()}
+                className="ml-4 font-semibold underline hover:text-amber-900"
+              >
+                Retry
+              </button>
+            )}
           </div>
         )}
 

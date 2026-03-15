@@ -49,11 +49,13 @@ const PeopleCard = ({ id, name, imageUrl, rating, isVerified }: PeopleCardProps)
 
 const People = () => {
   const [location, setLocation] = useState<CityLocation | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { data: hosts, isLoading } = useListHosts();
 
   // Load saved location on mount
   useEffect(() => {
     setLocation(getSavedLocation());
+    setMounted(true);
     
     // Listen for location changes
     const handleStorageChange = () => {
@@ -66,7 +68,7 @@ const People = () => {
   // Filter hosts by location (city match)
   const filteredHosts = useMemo(() => {
     if (!hosts) return [];
-    if (!location) return hosts.slice(0, 8); // Show first 8 if no location
+    if (!mounted || !location) return hosts.slice(0, 8); // Show first 8 if not mounted or no location
     
     // Filter hosts whose city matches the selected location
     const cityLower = location.city.toLowerCase();
@@ -77,7 +79,7 @@ const People = () => {
     
     // If no hosts in selected city, show all hosts
     return locationFiltered.length > 0 ? locationFiltered.slice(0, 8) : hosts.slice(0, 8);
-  }, [hosts, location]);
+  }, [hosts, location, mounted]);
 
   return (
     <div className="flex flex-col w-full px-6 md:px-12 lg:px-20 mt-8">

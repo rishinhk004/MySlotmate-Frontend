@@ -343,9 +343,9 @@ export interface HostDashboardDTO {
   total_bookings: number;
 }
 
-/** GET /hosts/dashboard?host_id=<uuid> */
-export function getHostDashboard(hostId: string) {
-  return apiFetch<HostDashboardDTO>("/hosts/dashboard", { params: { host_id: hostId } });
+/** GET /hosts/dashboard?host_id=<uuid>&user_id=<uuid> */
+export function getHostDashboard(hostId: string, userId: string) {
+  return apiFetch<HostDashboardDTO>("/hosts/dashboard", { params: { host_id: hostId, user_id: userId } });
 }
 
 /* ------------------------------------------------------------------ */

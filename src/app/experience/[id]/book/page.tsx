@@ -4,18 +4,58 @@ import { useEffect, useState, use, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "~/components/Navbar";
-import { TopUpModal } from "~/components/wallet";
 import {
   useEvent,
   usePublicHostProfile,
   useCreateBooking,
   useConfirmBooking,
   useWalletBalance,
+  useCreateTopupOrder,
+  useVerifyTopupPayment,
 } from "~/hooks/useApi";
 import { FiCalendar, FiUsers, FiClock, FiShield, FiAlertCircle } from "react-icons/fi";
-import { LuWallet, LuPlus } from "react-icons/lu";
+import { LuWallet, LuPlus, LuLoader2 } from "react-icons/lu";
 import { format } from "date-fns";
 import { toast } from "sonner";
+
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  theme?: {
+    color?: string;
+  };
+  modal?: {
+    ondismiss?: () => void;
+  };
+}
+
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayInstance {
+  open: () => void;
+  close: () => void;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Experience Summary Card                                            */
@@ -59,7 +99,7 @@ function ExperienceSummaryCard({
 
       <div className="flex gap-4">
         {/* Image */}
-        <div className="w-32 h-28 rounded-lg overflow-hidden flex-shrink-0">
+        <div className="w-32 h-28 rounded-lg overflow-hidden shrink-0">
           {event.cover_image_url ? (
             <img
               src={event.cover_image_url}
@@ -135,9 +175,15 @@ function BookingContent({ eventId }: { eventId: string }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | undefined>();
   const [userEmail, setUserEmail] = useState<string | undefined>();
+  const [userPhone, setUserPhone] = useState<string | undefined>();
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTopUp, setShowTopUp] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [pendingBookingData, setPendingBookingData] = useState<{
+    quantityForBooking: number;
+    totalPriceCentsForBooking: number;
+  } | null>(null);
 
   const date = searchParams.get("date") ?? "";
   const guests = parseInt(searchParams.get("guests") ?? "1");
@@ -146,6 +192,18 @@ function BookingContent({ eventId }: { eventId: string }) {
     setUserId(localStorage.getItem("msm_user_id"));
     setUserName(localStorage.getItem("msm_user_name") ?? undefined);
     setUserEmail(localStorage.getItem("msm_user_email") ?? undefined);
+    setUserPhone(localStorage.getItem("msm_user_phone") ?? undefined);
+  }, []);
+
+  // Load Razorpay script
+  useEffect(() => {
+    if (!document.getElementById("razorpay-script")) {
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
   }, []);
 
   const { data: event, isLoading: eventLoading } = useEvent(eventId);
@@ -154,6 +212,8 @@ function BookingContent({ eventId }: { eventId: string }) {
 
   const createBooking = useCreateBooking();
   const confirmBooking = useConfirmBooking();
+  const createOrder = useCreateTopupOrder();
+  const verifyPayment = useVerifyTopupPayment();
 
   const pricePerPerson = event?.is_free ? 0 : (event?.price_cents ?? 0) / 100;
   const totalPrice = pricePerPerson * guests;
@@ -176,11 +236,98 @@ function BookingContent({ eventId }: { eventId: string }) {
     // Check wallet balance for paid events
     if (!event.is_free && totalPriceCents > 0) {
       if (walletBalance < totalPriceCents) {
-        toast.error("Insufficient wallet balance. Please top up.");
-        setShowTopUp(true);
+        // Insufficient balance - initiate direct payment for the shortfall
+        const shortfallCents = totalPriceCents - walletBalance;
+        setPendingBookingData({
+          quantityForBooking: guests,
+          totalPriceCentsForBooking: totalPriceCents,
+        });
+        await handleDirectPayment(shortfallCents);
         return;
       }
     }
+
+    // Sufficient balance - proceed with booking debit from wallet
+    await completeBooking(guests, totalPriceCents);
+  };
+
+  const handleDirectPayment = async (paymentAmountCents: number) => {
+    if (!userId) return;
+
+    setIsProcessingPayment(true);
+
+    try {
+      // Create Razorpay order for the exact booking amount
+      const orderRes = await createOrder.mutateAsync({
+        user_id: userId,
+        amount_cents: paymentAmountCents,
+        idempotency_key: crypto.randomUUID(),
+      });
+
+      const orderData = orderRes.data;
+
+      // Open Razorpay Checkout
+      const options: RazorpayOptions = {
+        key: orderData.key_id,
+        amount: orderData.amount_cents,
+        currency: orderData.currency ?? "INR",
+        name: "MySlotMate",
+        description: `Booking: ${event?.title}`,
+        order_id: orderData.order_id,
+        handler: (response: RazorpayResponse) => {
+          // Verify payment and complete booking
+          void (async () => {
+            try {
+              await verifyPayment.mutateAsync({
+                user_id: userId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+
+              // Payment verified - now complete the booking
+              if (pendingBookingData) {
+                await completeBooking(
+                  pendingBookingData.quantityForBooking,
+                  pendingBookingData.totalPriceCentsForBooking,
+                );
+              }
+            } catch (err) {
+              console.error("Payment verification failed:", err);
+              toast.error("Payment verification failed. Please contact support.");
+              setPendingBookingData(null);
+            }
+            setIsProcessingPayment(false);
+          })();
+        },
+        prefill: {
+          name: userName,
+          email: userEmail,
+          contact: userPhone,
+        },
+        theme: {
+          color: "#0094CA",
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessingPayment(false);
+            setPendingBookingData(null);
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (err) {
+      console.error("Failed to create payment order:", err);
+      toast.error("Failed to initiate payment. Please try again.");
+      setIsProcessingPayment(false);
+      setPendingBookingData(null);
+    }
+  };
+
+  const completeBooking = async (quantity: number, totalCents: number) => {
+    if (!userId || !event) return;
 
     setIsSubmitting(true);
 
@@ -192,17 +339,19 @@ function BookingContent({ eventId }: { eventId: string }) {
       const bookingRes = await createBooking.mutateAsync({
         user_id: userId,
         event_id: eventId,
-        quantity: guests,
+        quantity: quantity,
         idempotency_key: idempotencyKey,
       });
 
       // Confirm the booking
       await confirmBooking.mutateAsync(bookingRes.data.id);
-      
-      toast.success(event.is_free || totalPrice === 0 
-        ? "Booking confirmed!" 
-        : "Payment successful! Booking confirmed.");
-      
+
+      toast.success(
+        event.is_free || totalCents === 0
+          ? "Booking confirmed!"
+          : "Payment successful! Booking confirmed.",
+      );
+
       router.push(`/experience/${eventId}/confirmation?booking=${bookingRes.data.id}`);
     } catch (err) {
       console.error("Booking failed:", err);
@@ -272,42 +421,34 @@ function BookingContent({ eventId }: { eventId: string }) {
         {/* Wallet Balance Section (for paid events) */}
         {!event.is_free && totalPriceCents > 0 && (
           <div className="mt-6">
-            <div className={`rounded-xl border-2 p-4 ${hasInsufficientBalance ? 'border-amber-300 bg-amber-50' : 'border-green-200 bg-green-50'}`}>
+            <div className={`rounded-xl border-2 p-4 ${hasInsufficientBalance ? 'border-blue-300 bg-blue-50' : 'border-green-200 bg-green-50'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${hasInsufficientBalance ? 'bg-amber-100' : 'bg-green-100'}`}>
-                    <LuWallet className={`h-5 w-5 ${hasInsufficientBalance ? 'text-amber-600' : 'text-green-600'}`} />
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${hasInsufficientBalance ? 'bg-blue-100' : 'bg-green-100'}`}>
+                    <LuWallet className={`h-5 w-5 ${hasInsufficientBalance ? 'text-blue-600' : 'text-green-600'}`} />
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Wallet Balance</p>
                     {walletLoading ? (
                       <div className="h-5 w-16 bg-gray-200 animate-pulse rounded" />
                     ) : (
-                      <p className={`text-lg font-bold ${hasInsufficientBalance ? 'text-amber-700' : 'text-green-700'}`}>
+                      <p className={`text-lg font-bold ${hasInsufficientBalance ? 'text-blue-700' : 'text-green-700'}`}>
                         ₹{(walletBalance / 100).toLocaleString("en-IN")}
                       </p>
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowTopUp(true)}
-                  className="flex items-center gap-1.5 rounded-lg bg-[#0094CA] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#007dab]"
-                >
-                  <LuPlus className="h-4 w-4" />
-                  Add Money
-                </button>
               </div>
 
-              {/* Insufficient balance warning */}
+              {/* Insufficient balance info */}
               {hasInsufficientBalance && (
-                <div className="mt-3 flex items-start gap-2 border-t border-amber-200 pt-3">
-                  <FiAlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="mt-3 border-t border-blue-200 pt-3">
                   <div className="text-sm">
-                    <p className="font-medium text-amber-800">
-                      Insufficient balance
+                    <p className="font-medium text-blue-800">
+                      You can pay the remaining ₹{(shortfall / 100).toFixed(0)} directly
                     </p>
-                    <p className="text-amber-700">
-                      You need ₹{(shortfall / 100).toFixed(0)} more to complete this booking.
+                    <p className="text-blue-700 text-xs mt-1">
+                      Click "Pay & Confirm" below to pay via card/UPI and complete your booking.
                     </p>
                   </div>
                 </div>
@@ -319,18 +460,18 @@ function BookingContent({ eventId }: { eventId: string }) {
         {/* Confirm Button */}
         <button
           onClick={handleConfirmBooking}
-          disabled={isSubmitting || hasInsufficientBalance}
-          className="w-full mt-6 py-4 bg-[#0094CA] hover:bg-[#007ba8] text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isSubmitting || isProcessingPayment}
+          className="w-full mt-6 py-4 bg-[#0094CA] hover:bg-[#007ba8] text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isSubmitting ? (
-            <span className="flex items-center justify-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+          {isSubmitting || isProcessingPayment ? (
+            <>
+              <LuLoader2 className="h-4 w-4 animate-spin" />
               Processing...
-            </span>
-          ) : hasInsufficientBalance ? (
-            "Add Money to Continue"
+            </>
           ) : totalPrice === 0 ? (
             "Confirm Booking"
+          ) : hasInsufficientBalance ? (
+            `Pay ₹${(shortfall / 100).toFixed(0)} & Confirm (₹${(walletBalance / 100).toFixed(0)} from wallet)`
           ) : (
             `Pay ₹${totalPrice.toFixed(0)} & Confirm`
           )}
@@ -354,18 +495,6 @@ function BookingContent({ eventId }: { eventId: string }) {
           </span>
         </div>
       </div>
-
-      {/* Top-Up Modal */}
-      {userId && (
-        <TopUpModal
-          isOpen={showTopUp}
-          onClose={() => setShowTopUp(false)}
-          userId={userId}
-          currentBalance={walletBalance}
-          userName={userName}
-          userEmail={userEmail}
-        />
-      )}
     </main>
   );
 }

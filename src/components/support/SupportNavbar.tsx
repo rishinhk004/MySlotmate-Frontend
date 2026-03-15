@@ -10,7 +10,6 @@ import { LuHome, LuCalendarDays, LuBookmarkMinus, LuShield, LuLogOut, LuMessageS
 import { auth } from "~/utils/firebase";
 import { useMyProfile, useApplicationStatus } from "~/hooks/useApi";
 import { WalletDisplay } from "~/components/wallet";
-import AadharVerificationModal from "~/components/AadharVerificationModal";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "~/hooks/useApi";
 
@@ -24,7 +23,6 @@ export default function SupportNavbar() {
   const pathname = usePathname();
   const [user] = useAuthState(auth);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [showAadharVerify, setShowAadharVerify] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
@@ -40,8 +38,7 @@ export default function SupportNavbar() {
   const { data: userProfile } = useMyProfile(validUserId);
   const { data: hostData } = useApplicationStatus(validUserId);
   
-  const isVerified = userProfile?.is_verified ?? false;
-  const hostStatus = hostData?.application_status ?? null;
+  const hostStatus = (hostData as { application_status?: string | null })?.application_status ?? null;
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -181,36 +178,88 @@ export default function SupportNavbar() {
                       </div>
                     )}
 
-                    {/* Aadhaar Verification section */}
-                    {validUserId && !isVerified && (
-                      <div className="mx-5 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    {/* Host Status section */}
+                    {validUserId && !hostStatus && (
+                      <div className="mx-5 mb-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm font-semibold text-gray-900">
-                              Aadhaar Verification
+                              Become a Host
                             </p>
                             <p className="text-xs text-gray-500">
-                              Required to become a host
+                              Start hosting experiences
                             </p>
                           </div>
-                          <button
-                            onClick={() => setShowAadharVerify(true)}
+                          <Link
+                            href="/become-host"
                             className="rounded-lg bg-[#0094CA] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#007dab]"
                           >
-                            Verify Now
-                          </button>
+                            Get Started
+                          </Link>
                         </div>
                       </div>
                     )}
-                    {validUserId && isVerified && (
+                    {validUserId && hostStatus === "draft" && (
+                      <div className="mx-5 mb-3 rounded-xl border border-gray-300 bg-gray-50 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700">
+                            📝
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">Draft Application</p>
+                            <p className="text-xs text-gray-600">Complete your application</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {validUserId && hostStatus === "pending" && (
+                      <div className="mx-5 mb-3 rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-200 text-sm font-semibold text-yellow-700">
+                            ⏳
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-yellow-900">Application Submitted</p>
+                            <p className="text-xs text-yellow-700">Waiting for review</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {validUserId && hostStatus === "under_review" && (
+                      <div className="mx-5 mb-3 rounded-xl border border-yellow-400 bg-yellow-50 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-200 text-sm font-semibold text-yellow-700">
+                            🔍
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-yellow-900">Under Review</p>
+                            <p className="text-xs text-yellow-700">Admin is reviewing your application</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {validUserId && hostStatus === "rejected" && (
+                      <div className="mx-5 mb-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-200 text-sm font-semibold text-red-700">
+                            ❌
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-red-900">Application Rejected</p>
+                            <p className="text-xs text-red-700">Contact support for details</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {validUserId && hostStatus === "approved" && (
                       <div className="mx-5 mb-3 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
                         <LuShield className="h-5 w-5 text-green-600" />
                         <div>
                           <p className="text-sm font-semibold text-green-800">
-                            Aadhaar Verified
+                            Host Verified
                           </p>
                           <p className="text-xs text-green-600">
-                            Your identity has been verified
+                            Your host account is active
                           </p>
                         </div>
                       </div>
@@ -327,19 +376,6 @@ export default function SupportNavbar() {
         </div>
       </nav>
 
-      {/* Aadhaar Verification Modal */}
-      {validUserId && (
-        <AadharVerificationModal
-          open={showAadharVerify}
-          onClose={() => setShowAadharVerify(false)}
-          userId={validUserId}
-          onVerified={() => {
-            void queryClient.invalidateQueries({
-              queryKey: queryKeys.myProfile(validUserId),
-            });
-          }}
-        />
-      )}
     </>
   );
 }

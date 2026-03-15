@@ -103,11 +103,6 @@ export default function HostProfilePage({
             <PhotoGallery images={galleryUrls} />
           </div>
         )}
-        {galleryUrls.length > 0 && (
-          <div className="mt-6">
-            <PhotoGallery images={galleryUrls} />
-          </div>
-        )}
 
         {/* Stats */}
         <div className="mt-6">
@@ -124,7 +119,7 @@ export default function HostProfilePage({
             <AboutSection
               first_name={host.first_name}
               bio={host.bio}
-              expertise_tags={host.expertise_tags}
+              expertise_tags={host.expertise_tags ?? []}
               moods={moods}
             />
           </div>
@@ -138,11 +133,6 @@ export default function HostProfilePage({
         </div>
 
         {/* Live & Upcoming Experiences */}
-        {events && events.length > 0 && (
-          <div className="mt-10 mb-12">
-            <ExperiencesList events={events} />
-          </div>
-        )}
         {events && events.length > 0 && (
           <div className="mt-10 mb-12">
             <ExperiencesList events={events} />

@@ -24,7 +24,7 @@ const Footer = () => {
                 </div>
                 <div className="flex flex-col items-center md:items-start justify-center">
                     <h1>Subscribe</h1>
-                    <div className="flex flex-row items-center justify-center"><input type="text" className="bg-[#ffffff] h-[2rem] border-2 border-gray-500 p-2 rounded-l-lg outline-0" placeholder="Get product updates" /><button className="bg-[#0094CA] text-[#ffffff] py-2 px-4 h-[2rem] rounded-r-lg flex items-center gap-2"><FiArrowRight /></button></div>
+                    <div className="flex flex-row items-center justify-center"><input type="text" className="bg-[#ffffff] h-[2rem] border-2 border-gray-500 p-2 rounded-l-lg outline-0" placeholder="Get product updates" suppressHydrationWarning /><button className="bg-[#0094CA] text-[#ffffff] py-2 px-4 h-[2rem] rounded-r-lg flex items-center gap-2" suppressHydrationWarning><FiArrowRight /></button></div>
                 </div>
             </div>
             <hr />

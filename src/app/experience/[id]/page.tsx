@@ -35,14 +35,14 @@ export const runtime = "edge";
 /* ------------------------------------------------------------------ */
 function PhotoGallery({
   coverImage,
-  gallery,
+  gallery = [],
   onShowAll,
 }: {
   coverImage: string | null;
-  gallery: string[];
+  gallery: string[] | null;
   onShowAll: () => void;
 }) {
-  const images = coverImage ? [coverImage, ...gallery] : gallery;
+  const images = coverImage ? [coverImage, ...(gallery ?? [])] : (gallery ?? []);
   const displayImages = images.slice(0, 5);
 
   if (displayImages.length === 0) {
@@ -638,8 +638,8 @@ export default function ExperienceDetailPage({
   }
 
   const allImages = event.cover_image_url
-    ? [event.cover_image_url, ...event.gallery_urls]
-    : event.gallery_urls;
+    ? [event.cover_image_url, ...(event.gallery_urls ?? [])]
+    : (event.gallery_urls ?? []);
 
   return (
     <>

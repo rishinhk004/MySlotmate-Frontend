@@ -298,12 +298,19 @@ export default function HostProfileEditPage() {
               </div>
 
               {/* Avatar */}
-              <div className="mt-6 flex items-center gap-5">{/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={form.avatarUrl}
-                  alt="Avatar"
-                  className="h-20 w-20 rounded-full border-2 border-gray-200 object-cover"
-                />
+              <div className="mt-6 flex items-center gap-5">
+                {form.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.avatarUrl}
+                    alt="Avatar"
+                    className="h-20 w-20 rounded-full border-2 border-gray-200 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-gray-200 bg-gray-100">
+                    <span className="text-2xl text-gray-400">👤</span>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-semibold text-gray-900">
                     Your Avatar

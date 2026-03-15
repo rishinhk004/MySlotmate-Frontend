@@ -15,16 +15,19 @@ import {
 } from "date-fns";
 import { FiChevronLeft, FiChevronRight, FiRefreshCw, FiPlus, FiMapPin, FiClock, FiMessageCircle } from "react-icons/fi";
 import { HostNavbar } from "~/components/host-dashboard";
-import { useCalendarEvents, useEventAttendees } from "~/hooks/useApi";
+import { useCalendarEvents, useEventAttendees, useMyHost } from "~/hooks/useApi";
 import type { EventDTO } from "~/lib/api";
 
 export default function HostCalendarPage() {
-  const [hostId, setHostId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   useEffect(() => {
-    setHostId(localStorage.getItem("msm_host_id"));
+    setUserId(localStorage.getItem("msm_user_id"));
+    setIsHydrated(true);
   }, []);
 
-  const { data: events, isLoading } = useCalendarEvents(hostId);
+  const { data: host } = useMyHost(userId);
+  const { data: events, isLoading } = useCalendarEvents(host?.id ?? null);
 
   const [cursorMonth, setCursorMonth] = useState<Date>(() => new Date());
   const [selectedDay, setSelectedDay] = useState<Date>(() => new Date());
@@ -37,7 +40,8 @@ export default function HostCalendarPage() {
   const eventsByDayKey = useMemo(() => {
     const map = new Map<string, NonNullable<typeof events>>();
     for (const ev of events ?? []) {
-      const dayKey = new Date(ev.time).toISOString().slice(0, 10);
+      const date = new Date(ev.time);
+      const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       map.set(dayKey, [...(map.get(dayKey) ?? []), ev]);
     }
     for (const [k, arr] of map) {
@@ -53,7 +57,7 @@ export default function HostCalendarPage() {
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const gridDays = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
-  const selectedKey = selectedDay.toISOString().slice(0, 10);
+  const selectedKey = `${selectedDay.getFullYear()}-${String(selectedDay.getMonth() + 1).padStart(2, '0')}-${String(selectedDay.getDate()).padStart(2, '0')}`;
   const selectedDayEvents = eventsByDayKey.get(selectedKey) ?? [];
 
   // Auto-select first event of selected day
@@ -65,7 +69,7 @@ export default function HostCalendarPage() {
     }
   }, [selectedDayEvents, selectedEvent]);
 
-  if (!hostId) {
+  if (!isHydrated || !userId) {
     return (
       <div className="min-h-screen bg-gray-50">
         <HostNavbar />
@@ -170,7 +174,7 @@ export default function HostCalendarPage() {
                 {gridDays.map((day, idx) => {
                   const inMonth = isSameMonth(day, cursorMonth);
                   const isSelected = isSameDay(day, selectedDay);
-                  const dayKey = day.toISOString().slice(0, 10);
+                  const dayKey = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
                   const dayEvents = eventsByDayKey.get(dayKey) ?? [];
                   const isLastRow = idx >= gridDays.length - 7;
 

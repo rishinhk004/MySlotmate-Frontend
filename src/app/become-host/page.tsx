@@ -14,6 +14,7 @@ import {
   useSubmitHostApplication,
   useSaveHostDraft,
   useUploadFiles,
+  useApplicationStatus,
 } from "~/hooks/useApi";
 
 /* ------------------------------------------------------------------ */
@@ -64,9 +65,11 @@ export default function BecomeHostPage() {
   const validUserId =
     storedUserId && storedUserId !== "existing" ? storedUserId : null;
 
-  // Check real is_verified from API
+  // Fetch user profile (no longer checking for verification - admin will verify after application acceptance)
   const { data: userProfile } = useMyProfile(validUserId);
-  const isVerified = userProfile?.is_verified ?? false;
+
+  // Fetch application status
+  const { data: applicationStatus, isLoading: statusLoading } = useApplicationStatus(validUserId);
 
   // Mutation hooks
   const submitMutation = useSubmitHostApplication();
@@ -176,28 +179,83 @@ export default function BecomeHostPage() {
     );
   }
 
-  if (!isVerified) {
+  /* ---- guard: show status if user has already applied (not in draft) ---- */
+  const hasExistingApplication = applicationStatus?.application_status && applicationStatus.application_status !== "draft";
+  
+  if (!statusLoading && hasExistingApplication) {
+    const status = applicationStatus.application_status;
+    const statusConfig = {
+      pending: {
+        title: "Your Application is Under Review",
+        description: "We've received your host application and our team is currently reviewing your profile. This typically takes 24-48 hours.",
+        icon: "⏳",
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-200",
+        badgeColor: "bg-yellow-100 text-yellow-800",
+      },
+      under_review: {
+        title: "Your Application is Under Review",
+        description: "We're carefully reviewing your profile to ensure the best experience for our community. We'll notify you soon with a decision.",
+        icon: "🔍",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
+        badgeColor: "bg-blue-100 text-blue-800",
+      },
+      approved: {
+        title: "🎉 You're Approved!",
+        description: "Congratulations! You've been approved as a host. You can now create and post your first experience. Start hosting amazing moments!",
+        icon: "✅",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-200",
+        badgeColor: "bg-green-100 text-green-800",
+      },
+      rejected: {
+        title: "Application Status",
+        description: "Unfortunately, your application was not approved at this time. Please contact our support team if you'd like more information.",
+        icon: "❌",
+        bgColor: "bg-red-50",
+        borderColor: "border-red-200",
+        badgeColor: "bg-red-100 text-red-800",
+      },
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+
     return (
       <>
         <Navbar />
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Aadhar Verification Required
-          </h1>
-          <p className="max-w-md text-gray-500">
-            Only Aadhar-verified users can apply to become a host. Please complete your identity verification first.
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="rounded-full bg-[#0094CA] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#007dab]"
-          >
-            Go Home
-          </button>
-        </div>
+        <main className="min-h-screen bg-gray-50">
+          <div className="mx-auto max-w-2xl px-4 py-20 sm:px-6 lg:px-8">
+            <div className={`rounded-2xl border-2 ${config.borderColor} ${config.bgColor} p-8 text-center`}>
+              <div className="mb-6 text-6xl">{config.icon}</div>
+              <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
+              <p className="mt-4 text-lg text-gray-600">{config.description}</p>
+              
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <button
+                  onClick={() => router.push("/")}
+                  className="rounded-full bg-[#0094CA] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#007dab]"
+                >
+                  Browse Experiences
+                </button>
+                {status === "approved" && (
+                  <button
+                    onClick={() => router.push("/host-dashboard/experiences/new")}
+                    className="rounded-full border-2 border-[#0094CA] px-8 py-3 text-sm font-semibold text-[#0094CA] transition hover:bg-[#e6f8ff]"
+                  >
+                    Create Your First Experience
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
         <Home.Footer />
       </>
     );
   }
+
+
 
   /* ---- submit handlers ---- */
 

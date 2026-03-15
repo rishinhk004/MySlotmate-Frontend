@@ -229,25 +229,27 @@ function CreateNewCard() {
 /* ------------------------------------------------------------------ */
 export default function ExperiencesPage() {
   const router = useRouter();
-  const [hostId, setHostId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [tab, setTab] = useState<"all" | "live" | "draft" | "paused">("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [resumingId, setResumingId] = useState<string | null>(null);
 
   useEffect(() => {
-    setHostId(localStorage.getItem("msm_host_id"));
+    setUserId(localStorage.getItem("msm_user_id"));
+    setIsHydrated(true);
   }, []);
 
-  const { data: host, isLoading: hostLoading } = useMyHost(hostId);
+  const { data: host, isLoading: hostLoading } = useMyHost(userId);
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useEventsByHost(host?.id ?? null);
   const resumeEvent = useResumeEvent();
 
   useEffect(() => {
-    if (!hostId && !hostLoading) {
-      router.push("/login");
+    if (isHydrated && !userId && !hostLoading) {
+      router.push("/");
     }
-  }, [hostId, hostLoading, router]);
+  }, [userId, hostLoading, router, isHydrated]);
 
   // Tab counts
   const counts = useMemo(() => {

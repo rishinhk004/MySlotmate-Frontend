@@ -36,11 +36,13 @@ const TrendingCard = ({ id, title, imageUrl, pricing }: TrendingCardProps) => {
 
 const Trending = () => {
   const [location, setLocation] = useState<CityLocation | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { data: events, isLoading } = useListPublicEvents();
 
   // Load saved location on mount
   useEffect(() => {
     setLocation(getSavedLocation());
+    setMounted(true);
     
     // Listen for location changes
     const handleStorageChange = () => {
@@ -53,7 +55,7 @@ const Trending = () => {
   // Filter events by location
   const filteredEvents = useMemo(() => {
     if (!events) return [];
-    if (!location) return events.slice(0, 8); // Show first 8 if no location
+    if (!mounted || !location) return events.slice(0, 8); // Show first 8 if not mounted or no location
     
     // Filter events whose location matches the selected city
     const cityLower = location.city.toLowerCase();
@@ -64,7 +66,7 @@ const Trending = () => {
     
     // If no events in selected city, show all events
     return locationFiltered.length > 0 ? locationFiltered.slice(0, 8) : events.slice(0, 8);
-  }, [events, location]);
+  }, [events, location, mounted]);
 
   // Format price from cents to display string
   const formatPrice = (priceCents: number | null | undefined) => {
