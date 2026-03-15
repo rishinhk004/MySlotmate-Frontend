@@ -17,6 +17,11 @@ import {
   useEventsByHost,
   useReviewsByEvent,
 } from "~/hooks/useApi";
+import {
+  usePublicHostProfile,
+  useEventsByHost,
+  useReviewsByEvent,
+} from "~/hooks/useApi";
 
 export const runtime = "edge";
 
@@ -103,10 +108,18 @@ export default function HostProfilePage({
             <PhotoGallery images={galleryUrls} />
           </div>
         )}
+        {galleryUrls.length > 0 && (
+          <div className="mt-6">
+            <PhotoGallery images={galleryUrls} />
+          </div>
+        )}
 
         {/* Stats */}
         <div className="mt-6">
           <StatsBar
+            total_events_hosted={totalEvents}
+            total_people_met={totalPeopleMet}
+            avg_rating={host.avg_rating ?? 0}
             total_events_hosted={totalEvents}
             total_people_met={totalPeopleMet}
             avg_rating={host.avg_rating ?? 0}
@@ -121,18 +134,26 @@ export default function HostProfilePage({
               bio={host.bio}
               expertise_tags={host.expertise_tags}
               moods={moods}
+              moods={moods}
             />
           </div>
           <div className="lg:col-span-2">
             <RatingsSection
               avg_rating={host.avg_rating ?? 0}
+              avg_rating={host.avg_rating ?? 0}
               total_reviews={host.total_reviews}
+              reviews={reviews}
               reviews={reviews}
             />
           </div>
         </div>
 
         {/* Live & Upcoming Experiences */}
+        {events && events.length > 0 && (
+          <div className="mt-10 mb-12">
+            <ExperiencesList events={events} />
+          </div>
+        )}
         {events && events.length > 0 && (
           <div className="mt-10 mb-12">
             <ExperiencesList events={events} />
