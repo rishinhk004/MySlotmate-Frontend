@@ -442,16 +442,7 @@ export interface EventDTO {
 
 /** GET /events/host/{hostID} */
 export function getEventsByHost(hostId: string) {
-  console.log("[api.getEventsByHost] Fetching events for hostId:", hostId);
-  return apiFetch<EventDTO[]>(`/events/host/${hostId}`).then((envelope) => {
-    console.log("[api.getEventsByHost] API Response envelope:", envelope);
-    if (envelope.data && Array.isArray(envelope.data)) {
-      envelope.data.forEach((event) => {
-        console.log(`[api.getEventsByHost]   Event: "${event.title}" (${event.id}), total_bookings: ${event.total_bookings}`);
-      });
-    }
-    return envelope;
-  });
+  return apiFetch<EventDTO[]>(`/events/host/${hostId}`);
 }
 
 /** GET /events/ — list all published (live) events (public) */

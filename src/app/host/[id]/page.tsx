@@ -36,14 +36,6 @@ export default function HostProfilePage({
   const reviews = reviewsEnvelope ?? [];
 
   // DEBUG: Console logs
-  console.log("🔍 [HostProfilePage] Debug Info:");
-  console.log("  hostId:", _hostId);
-  console.log("  host?.total_reviews (from backend):", host?.total_reviews);
-  console.log("  host?.avg_rating:", host?.avg_rating);
-  console.log("  total events count:", events?.length);
-  console.log("  firstEventId:", firstEventId);
-  console.log("  sample reviews (from first event):", reviews);
-  console.log("  sample reviews.length:", reviews.length);
 
   // Derive gallery from all event cover images + gallery URLs
   const galleryUrls = useMemo(() => {

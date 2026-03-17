@@ -56,12 +56,8 @@ const Trending = () => {
   const filteredEvents = useMemo(() => {
     if (!events) return [];
     if (!mounted || !location) {
-      console.log("📍 Trending: Not mounted or no location. Showing first 8 events. Total events:", events.length);
       return events.slice(0, 8);
     }
-    
-    console.log("🔍 Trending: Filtering by distance from:", { city: location.city, state: location.state });
-    console.log("   Total events from API:", events.length);
     
     // Calculate distance for each event
     const eventsWithDistance = events.map((event) => {
@@ -75,9 +71,7 @@ const Trending = () => {
           event.location_lat,
           event.location_lng
         );
-        console.log(`   Event "${event.title}" at ${event.location} - Distance: ${distance.toFixed(1)}km`);
       } else {
-        console.log(`   Event "${event.title}" - No coordinates, skipping distance filter`);
         distance = Infinity; // Will appear at the end
       }
       
@@ -90,7 +84,6 @@ const Trending = () => {
       .slice(0, 8)
       .map(({ event }) => event);
     
-    console.log("   Showing", sorted.length, "nearest events");
     return sorted;
   }, [events, location, mounted]);
 

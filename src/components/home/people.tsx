@@ -69,12 +69,8 @@ const People = () => {
   const filteredHosts = useMemo(() => {
     if (!hosts) return [];
     if (!mounted || !location) {
-      console.log("📍 People: Not mounted or no location. Showing first 8 hosts. Total hosts:", hosts.length);
       return hosts.slice(0, 8);
     }
-    
-    console.log("🔍 People: Filtering by distance from:", { city: location.city, state: location.state });
-    console.log("   Total hosts from API:", hosts.length);
     
     // Calculate distance for each host
     const hostsWithDistance = hosts.map((host) => {
@@ -92,9 +88,7 @@ const People = () => {
           hostCity.lat,
           hostCity.lng
         );
-        console.log(`   Host "${host.first_name}" at ${host.city} - Distance: ${distance.toFixed(1)}km`);
       } else {
-        console.log(`   Host "${host.first_name}" at ${host.city} - City not found in database`);
         distance = Infinity; // Will appear at the end
       }
       
@@ -107,7 +101,6 @@ const People = () => {
       .slice(0, 8)
       .map(({ host }) => host);
     
-    console.log("   Showing", sorted.length, "nearest hosts");
     return sorted;
   }, [hosts, location, mounted]);
 

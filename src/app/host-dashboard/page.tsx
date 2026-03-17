@@ -75,15 +75,6 @@ export default function HostDashboardPage() {
   const { data: todayScheduleData } = useTodaySchedule(storedHostId);
   const { data: payoutHistory } = usePayoutHistory(storedHostId);
 
-  // Debug: log error details
-  useEffect(() => {
-    console.log("Dashboard Debug - User ID:", userId, "Host ID:", storedHostId);
-    console.log("Dashboard API Response:", dashboard);
-    if (queryError) {
-      console.error("Dashboard Error:", queryError);
-    }
-  }, [queryError, storedHostId, userId, dashboard]);
-
   const error = !storedHostId
     ? "No host profile found. Please apply as a host first."
     : queryError
@@ -137,15 +128,6 @@ export default function HostDashboardPage() {
   
   const totalBookings = (d?.total_bookings as number) || 0;
   const totalEvents = (d?.total_events as number) || 0;
-
-  // Debug: log calculated stats
-  useEffect(() => {
-    console.log("Calculated Stats:");
-    console.log("  - totalEvents:", totalEvents);
-    console.log("  - totalBookings:", totalBookings);
-    console.log("  - totalEarnings:", totalEarnings);
-    console.log("  - avgRating:", avgRating);
-  }, [totalEvents, totalBookings, totalEarnings, avgRating]);
 
   const STATS = [
     {

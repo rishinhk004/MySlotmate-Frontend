@@ -167,13 +167,6 @@ export default function RatingsSection({
   reviews: ReviewDTO[];
   hostId?: string;
 }) {
-  console.log("📊 [RatingsSection] Component Received:");
-  console.log("  avg_rating:", avg_rating);
-  console.log("  total_reviews:", total_reviews);
-  console.log("  reviews.length:", reviews.length);
-  console.log("  reviews array:", reviews);
-  console.log("  hostId:", hostId);
-
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
       <h3 className="text-lg font-bold text-gray-900">Ratings</h3>

@@ -117,11 +117,6 @@ export default function HostEarningsPage() {
   );
   const { data: payoutMethods, isLoading: loadingMethods, refetch: refetchMethods } = usePayoutMethods(hostId);
 
-  // Log payout methods
-  useEffect(() => {
-    console.log("Payout Methods:", payoutMethods);
-  }, [payoutMethods]);
-
   // ── Currency formatter (INR) ──
   const fmtCurrency = useMemo(() => {
     const nf = new Intl.NumberFormat("en-IN", {

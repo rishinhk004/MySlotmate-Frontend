@@ -42,7 +42,6 @@ export const POPULAR_CITIES: CityLocation[] = [
   
   // Beach & tourism cities
   { city: "Goa", state: "Goa", lat: 15.2993, lng: 73.8243 },
-  { city: "Jaipur", state: "Rajasthan", lat: 26.9124, lng: 75.7873 },
   
   // Tier 3 & tier 2 expansion
   { city: "Visakhapatnam", state: "Andhra Pradesh", lat: 17.6869, lng: 83.2185 },

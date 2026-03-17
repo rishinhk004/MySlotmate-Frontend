@@ -82,10 +82,6 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
 
-  useEffect(() => {
-    console.log(`[ExperienceCard] ${event.title}: total_bookings = ${event.total_bookings}`);
-  }, [event.total_bookings, event.title]);
-
   const nextDate = event.status === "paused" ? null : event.time;
   const isPaused = event.status === "paused";
   const isDraft = event.status === "draft";
@@ -113,10 +109,10 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
       {/* Image with status badge */}
-      <div className="relative h-44">
+      <div className="relative h-44 bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={event.cover_image_url ?? "/assets/home/placeholder.jpg"}
+          src={event.cover_image_url ?? "/assets/home/cover.svg"}
           alt={event.title}
           className="w-full h-full object-cover"
         />
@@ -249,17 +245,6 @@ export default function ExperiencesPage() {
   const { data: host, isLoading: hostLoading } = useMyHost(userId);
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useEventsByHost(host?.id ?? null);
   const resumeEvent = useResumeEvent();
-
-  
-
-  useEffect(() => {
-    console.log("[ExperiencesPage] Events loaded:", events);
-    if (events) {
-      events.forEach((evt) => {
-        console.log(`  - ${evt.title}: ${evt.total_bookings} bookings`);
-      });
-    }
-  }, [events]);
 
   useEffect(() => {
     if (isHydrated && !userId && !hostLoading) {

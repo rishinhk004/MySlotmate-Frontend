@@ -33,28 +33,13 @@ export default function AdminPage() {
     if (user) {
       void user.getIdToken().then((token) => {
         setIdToken(token);
-        console.log("🔑 Firebase ID Token obtained");
       });
     }
   }, [user]);
 
-  // Debug: Log admin check
-  useEffect(() => {
-    console.log("👤 User email:", user?.email);
-    console.log("🔐 Expected admin email:", env.NEXT_PUBLIC_ADMIN_EMAIL);
-    console.log("✅ Is Admin:", isAdmin);
-  }, [user, isAdmin]);
-
   // Fetch pending applications
   const { data: applications, isLoading, refetch, error } = usePendingHostApplications(idToken);
 
-  // Debug: Log pending applications
-  useEffect(() => {
-    console.log("📋 Pending applications:", applications);
-    if (error) {
-      console.error("❌ Error fetching applications:", error);
-    }
-  }, [applications, error]);
   const approveAppMutation = useApproveHostApplication();
   const rejectAppMutation = useRejectHostApplication();
 

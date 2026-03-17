@@ -88,7 +88,7 @@ export default function Navbar() {
     !!user?.email &&
     user.email.toLowerCase() === String(env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").toLowerCase();
 
-  const showBecomeHostButton = !hostLoading && !hostStatus;
+  const showBecomeHostButton = !hostLoading && !!validUserId && !hostStatus;
 
   useEffect(() => {
     if (hostData?.id) {
@@ -108,7 +108,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full bg-white shadow-sm">
+      <nav className="sticky top-0 z-40 w-full bg-white shadow-sm" suppressHydrationWarning>
         <div className="h-[3px] w-full bg-[#0094CA]" />
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
@@ -125,17 +125,8 @@ export default function Navbar() {
             >
               <IoLocationSharp className="h-5 w-5 text-[#0094CA]" />
               <div className="leading-tight text-left">
-                {mounted ? (
-                  <>
-                    <p className="font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
-                    <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-semibold text-gray-900">Select City</p>
-                    <p className="text-xs text-gray-500">Tap to detect</p>
-                  </>
-                )}
+                <p className="font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
+                <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
               </div>
             </button>
 
@@ -181,8 +172,8 @@ export default function Navbar() {
 
               {profileOpen && user && (
                 <>
-                  <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setProfileOpen(false)} />
-                  <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl">
+                  <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setProfileOpen(false)} suppressHydrationWarning />
+                  <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl" suppressHydrationWarning>
                     {/* Header */}
                     <div className="flex items-center gap-3 border-b px-5 py-4">
                       <button onClick={() => setProfileOpen(false)} className="rounded-lg p-1 hover:bg-gray-100 transition">
@@ -206,11 +197,11 @@ export default function Navbar() {
                       </div>
                       {hostStatus === "pending" || hostStatus === "under_review" ? (
                         <span className="ml-auto flex-shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                          🟡 Under Review
+                          Under Review
                         </span>
                       ) : hostStatus === "approved" ? (
                         <span className="ml-auto flex-shrink-0 rounded-full bg-[#e6f8ff] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#0094CA]">
-                          ✅ Verified Host
+                          Verified Host
                         </span>
                       ) : null}
                     </div>
@@ -229,7 +220,24 @@ export default function Navbar() {
                     )}
 
                     <div className="flex-1 overflow-y-auto px-5">
-                      {/* Become a Host card */}
+                      {/* Host Dashboard card - Approved hosts */}
+                      {hostStatus === "approved" && (
+                        <div className="mb-4 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">Host Dashboard</p>
+                            <p className="text-xs text-gray-500">Manage your experiences</p>
+                          </div>
+                          <Link
+                            href="/host-dashboard"
+                            onClick={() => setProfileOpen(false)}
+                            className="rounded-xl bg-[#0094CA] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#007dab]"
+                          >
+                            Go Now
+                          </Link>
+                        </div>
+                      )}
+
+                      {/* Become a Host card - Non-hosts */}
                       {showBecomeHostButton && (
                         <div className="mb-4 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
                           <div>
@@ -318,7 +326,7 @@ export default function Navbar() {
                           <p className="mb-1 mt-5 text-xs font-semibold uppercase tracking-wide text-gray-500">Admin</p>
                           <div className="rounded-xl border border-gray-200">
                             <Link
-                              href="/host-dashboard/admin"
+                              href="/admin"
                               onClick={() => setProfileOpen(false)}
                               className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition"
                             >
@@ -396,24 +404,15 @@ export default function Navbar() {
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto">
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto" suppressHydrationWarning>
             <button
               onClick={() => { setLocationOpen(true); setMobileOpen(false); }}
               className="flex items-center gap-2 py-3 w-full rounded-lg hover:bg-gray-50 transition"
             >
               <IoLocationSharp className="h-5 w-5 text-[#0094CA]" />
               <div className="text-left">
-                {mounted ? (
-                  <>
-                    <p className="text-sm font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
-                    <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-semibold text-gray-900">Select City</p>
-                    <p className="text-xs text-gray-500">Tap to detect</p>
-                  </>
-                )}
+                <p className="text-sm font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
+                <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
               </div>
             </button>
 
@@ -453,7 +452,24 @@ export default function Navbar() {
 
                 <hr className="my-2" />
 
-                {/* Become a Host — mobile */}
+                {/* Host Dashboard — mobile - Approved hosts */}
+                {hostStatus === "approved" && (
+                  <div className="mb-3 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">Host Dashboard</p>
+                      <p className="text-xs text-gray-500">Manage your experiences</p>
+                    </div>
+                    <Link
+                      href="/host-dashboard"
+                      onClick={() => setMobileOpen(false)}
+                      className="rounded-xl bg-[#0094CA] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#007dab]"
+                    >
+                      Go Now
+                    </Link>
+                  </div>
+                )}
+
+                {/* Become a Host — mobile - Non-hosts */}
                 {showBecomeHostButton && (
                   <div className="mb-3 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
                     <div>
@@ -466,22 +482,6 @@ export default function Navbar() {
                     >
                       Get Started
                     </button>
-                  </div>
-                )}
-
-                {hostStatus === "approved" && (
-                  <div className="mb-3 space-y-1.5">
-                    <Link
-                      href="/host-dashboard"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
-                    >
-                      <span className="flex items-center gap-3">
-                        <LuHome className="h-5 w-5 text-gray-600" />
-                        Host dashboard
-                      </span>
-                      <FiChevronRight className="h-4 w-4 text-gray-400" />
-                    </Link>
                   </div>
                 )}
 
@@ -514,7 +514,7 @@ export default function Navbar() {
                   <div className="mb-3">
                     <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">Admin</p>
                     <Link
-                      href="/host-dashboard/admin"
+                      href="/admin"
                       onClick={() => setMobileOpen(false)}
                       className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
                     >
