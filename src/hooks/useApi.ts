@@ -62,7 +62,7 @@ export function useUserProfile(userId: string | null) {
   });
 }
 
-export function useApplicationStatus(userId: string | null): UseQueryResult<Partial<api.HostDTO> | undefined> {
+export function useApplicationStatus(userId: string | null): UseQueryResult<Partial<api.HostApplicationDTO> | undefined> {
   return useQuery({
     queryKey: queryKeys.applicationStatus(userId ?? ""),
     queryFn: async () => {
@@ -591,18 +591,23 @@ export function useCreateBooking() {
   return useMutation({
     mutationFn: api.createBooking,
     onSuccess: (data, variables) => {
+      console.log("[useCreateBooking] Booking created:", data.data);
+      console.log("[useCreateBooking] Invalidating queries for bookingsByUser:", variables.user_id);
       void qc.invalidateQueries({
         queryKey: queryKeys.bookingsByUser(variables.user_id),
       });
       // Invalidate event queries since booking count changed
+      console.log("[useCreateBooking] Invalidating event query:", data.data.event_id);
       void qc.invalidateQueries({
         queryKey: queryKeys.event(data.data.event_id),
       });
       // Invalidate all eventsByHost queries to refresh booking counts
+      console.log("[useCreateBooking] Invalidating all eventsByHost queries");
       void qc.invalidateQueries({
         predicate: (query) => query.queryKey[0] === "eventsByHost",
       });
       // Also refresh public events list
+      console.log("[useCreateBooking] Invalidating listPublicEvents");
       void qc.invalidateQueries({
         queryKey: queryKeys.listPublicEvents,
       });
@@ -613,8 +618,15 @@ export function useCreateBooking() {
 export function useConfirmBooking() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (bookingId: string) => api.confirmBooking(bookingId),
+    mutationFn: (bookingId: string) => {
+      console.log("[useConfirmBooking] Confirming booking:", bookingId);
+      return api.confirmBooking(bookingId).then((res) => {
+        console.log("[useConfirmBooking] Response:", res.data);
+        return res;
+      });
+    },
     onSuccess: () => {
+      console.log("[useConfirmBooking] Confirmed! Invalidating queries");
       void qc.invalidateQueries({ queryKey: ["bookingsByUser"] });
       // Refresh event queries since booking status changed
       void qc.invalidateQueries({

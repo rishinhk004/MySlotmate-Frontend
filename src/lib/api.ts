@@ -31,7 +31,11 @@ export async function apiFetch<T>(
     const data = axErr.response?.data;
     const msg = data?.error ?? data?.message ?? axErr.message;
     const error = new Error(msg);
-    (error as Error & { status: number }).status = axErr.response?.status ?? 500;
+    (error as Error & { status: number; data?: Envelope<T> }).status = axErr.response?.status ?? 500;
+    // Preserve response data for error cases (e.g., 409 conflict may still contain user data)
+    if (data) {
+      (error as Error & { status: number; data?: Envelope<T> }).data = data;
+    }
     throw error;
   }
 }
@@ -197,6 +201,9 @@ export interface HostDTO {
   updated_at: string;
 }
 
+export interface HostApplicationDTO {
+  status: HostDTO;
+}
 export interface HostApplicationPayload {
   user_id: string;
   first_name: string;
@@ -224,9 +231,15 @@ export function saveHostDraft(body: HostApplicationPayload) {
   return apiFetch<HostDTO>("/hosts/apply/draft", { method: "POST", data: body });
 }
 
+export interface ApplicationStatusResponse {
+  status?: {
+    application_status: "draft" | "pending" | "under_review" | "approved" | "rejected";
+  };
+}
+
 /** GET /hosts/application-status?user_id=<uuid> */
 export function getApplicationStatus(userId: string) {
-  return apiFetch<HostDTO>("/hosts/application-status", { params: { user_id: userId } });
+  return apiFetch<ApplicationStatusResponse>("/hosts/application-status", { params: { user_id: userId } });
 }
 
 /** GET /hosts/me?user_id=<uuid> */

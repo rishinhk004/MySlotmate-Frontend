@@ -180,10 +180,10 @@ export default function BecomeHostPage() {
   }
 
   /* ---- guard: show status if user has already applied (not in draft) ---- */
-  const hasExistingApplication = applicationStatus?.application_status && applicationStatus.application_status !== "draft";
+  const hasExistingApplication = applicationStatus?.status?.application_status && applicationStatus.status.application_status !== "draft";
   
   if (!statusLoading && hasExistingApplication) {
-    const status = applicationStatus.application_status;
+    const status = applicationStatus.status!.application_status;
     const statusConfig = {
       pending: {
         title: "Your Application is Under Review",

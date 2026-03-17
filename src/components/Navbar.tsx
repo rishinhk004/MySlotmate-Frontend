@@ -28,9 +28,20 @@ export default function Navbar() {
   const queryClient = useQueryClient();
 
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
+  
+  // Read localStorage on mount and when user auth state changes
   useEffect(() => {
-    setStoredUserId(localStorage.getItem("msm_user_id"));
-  }, [profileOpen]);
+    const readStoredId = () => {
+      const id = localStorage.getItem("msm_user_id");
+      setStoredUserId(id);
+    };
+    
+    readStoredId();
+    
+    // Also listen for storage changes (handles updates from other tabs)
+    window.addEventListener("storage", readStoredId);
+    return () => window.removeEventListener("storage", readStoredId);
+  }, [user]);
 
   useEffect(() => {
     const saved = getSavedLocation();
@@ -82,9 +93,8 @@ export default function Navbar() {
   const { data: userProfile } = useMyProfile(validUserId);
   const { data: hostData, isLoading: hostLoading } = useApplicationStatus(validUserId);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
   const hostStatus = hostData?.status?.application_status ?? null;
-  console.log("Host status:", hostData);
 
   const isAdminUser =
     !!user?.email &&
@@ -94,9 +104,9 @@ export default function Navbar() {
 
   useEffect(() => {
     if (hostData?.id) {
-      localStorage.setItem("msm_host_id", hostData.id);
+      localStorage.setItem("msm_host_id", hostData?.status.id);
     }
-  }, [hostData?.id]);
+  }, [hostData?.id, hostData?.status.id]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -108,9 +118,26 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const handleLogout = async () => {
+    // Clear localStorage
+    localStorage.removeItem("msm_user_id");
+    localStorage.removeItem("msm_host_id");
+    localStorage.removeItem("msm_location");
+    
+    // Clear query cache
+    void queryClient.clear();
+    
+    // Close modals
+    setProfileOpen(false);
+    setMobileOpen(false);
+    
+    // Sign out from Firebase
+    void signOut(auth);
+  };
+
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full bg-white shadow-sm" suppressHydrationWarning>
+      <nav className="sticky top-0 z-40 w-full bg-white shadow-sm">
         <div className="h-[3px] w-full bg-[#0094CA]" />
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Logo */}
@@ -127,8 +154,17 @@ export default function Navbar() {
             >
               <IoLocationSharp className="h-5 w-5 text-[#0094CA]" />
               <div className="leading-tight text-left">
-                <p className="font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
-                <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
+                {mounted ? (
+                  <>
+                    <p className="font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
+                    <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-gray-900">Select City</p>
+                    <p className="text-xs text-gray-500">Tap to detect</p>
+                  </>
+                )}
               </div>
             </button>
 
@@ -174,8 +210,8 @@ export default function Navbar() {
 
               {profileOpen && user && (
                 <>
-                  <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setProfileOpen(false)} suppressHydrationWarning />
-                  <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl" suppressHydrationWarning>
+                  <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setProfileOpen(false)} />
+                  <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl">
                     {/* Header */}
                     <div className="flex items-center gap-3 border-b px-5 py-4">
                       <button onClick={() => setProfileOpen(false)} className="rounded-lg p-1 hover:bg-gray-100 transition">
@@ -380,7 +416,7 @@ export default function Navbar() {
                       {/* Logout */}
                       <div className="mt-5 mb-6 rounded-xl border border-gray-200">
                         <button
-                          onClick={() => { void signOut(auth); setProfileOpen(false); }}
+                          onClick={handleLogout}
                           className="flex w-full items-center gap-3 px-4 py-3.5 text-sm text-gray-800 hover:bg-red-50 transition"
                         >
                           <LuLogOut className="h-5 w-5 text-gray-600" />
@@ -406,15 +442,24 @@ export default function Navbar() {
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto" suppressHydrationWarning>
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto">
             <button
               onClick={() => { setLocationOpen(true); setMobileOpen(false); }}
               className="flex items-center gap-2 py-3 w-full rounded-lg hover:bg-gray-50 transition"
             >
               <IoLocationSharp className="h-5 w-5 text-[#0094CA]" />
               <div className="text-left">
-                <p className="text-sm font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
-                <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
+                {mounted ? (
+                  <>
+                    <p className="text-sm font-semibold text-gray-900">{location?.city ?? "Select City"}</p>
+                    <p className="text-xs text-gray-500">{location?.state ?? "Tap to detect"}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold text-gray-900">Select City</p>
+                    <p className="text-xs text-gray-500">Tap to detect</p>
+                  </>
+                )}
               </div>
             </button>
 
@@ -567,7 +612,7 @@ export default function Navbar() {
                 </div>
 
                 <button
-                  onClick={() => { void signOut(auth); setMobileOpen(false); }}
+                  onClick={handleLogout}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-red-50 transition"
                 >
                   <LuLogOut className="h-5 w-5 text-gray-600" />

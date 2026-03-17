@@ -71,8 +71,33 @@ export default function SignUpPage() {
     } catch (err: unknown) {
       const apiErr = err as Error & { status?: number };
       if (apiErr.status === 409) {
-        // User already exists — store flag and go home
-        localStorage.setItem("msm_user_id", "existing");
+        // User already exists — fetch their ID from Firebase UID
+        try {
+          console.log("409 conflict — fetching user from Firebase UID:", user.uid);
+          const profileRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/users/by-firebase/${user.uid}`,
+          );
+          if (profileRes.ok) {
+            const response = (await profileRes.json()) as { data?: { id?: string } };
+            console.log("Fetch response:", response);
+            const userId = response.data?.id;
+            if (userId) {
+              console.log("Extracted user ID:", userId);
+              localStorage.setItem("msm_user_id", userId);
+              toast.info("Welcome back!");
+              router.replace("/");
+              return;
+            } else {
+              console.warn("No ID in response:", response);
+            }
+          } else {
+            console.error("Fetch failed with status:", profileRes.status);
+          }
+        } catch (fetchErr) {
+          console.error("Fetch error:", fetchErr);
+        }
+        // Fallback: redirect and let Navbar handle it
+        console.log("Falling back to redirect without ID");
         toast.info("Welcome back!");
         router.replace("/");
       } else {
