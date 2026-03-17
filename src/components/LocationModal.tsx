@@ -10,29 +10,51 @@ import { LuLocateFixed } from "react-icons/lu";
 export interface CityLocation {
   city: string;
   state: string;
+  lat: number;
+  lng: number;
 }
 
 
 
-const POPULAR_CITIES: CityLocation[] = [
-  { city: "Mumbai", state: "Maharashtra" },
-  { city: "Delhi", state: "Delhi" },
-  { city: "Bengaluru", state: "Karnataka" },
-  { city: "Hyderabad", state: "Telangana" },
-  { city: "Chennai", state: "Tamil Nadu" },
-  { city: "Kolkata", state: "West Bengal" },
-  { city: "Pune", state: "Maharashtra" },
-  { city: "Ahmedabad", state: "Gujarat" },
-  { city: "Jaipur", state: "Rajasthan" },
-  { city: "Lucknow", state: "Uttar Pradesh" },
-  { city: "Guwahati", state: "Assam" },
-  { city: "Chandigarh", state: "Chandigarh" },
-  { city: "Kochi", state: "Kerala" },
-  { city: "Indore", state: "Madhya Pradesh" },
-  { city: "Bhopal", state: "Madhya Pradesh" },
-  { city: "Nagpur", state: "Maharashtra" },
-  { city: "Goa", state: "Goa" },
-  { city: "Coimbatore", state: "Tamil Nadu" },
+// Comprehensive database of Indian cities with coordinates
+export const POPULAR_CITIES: CityLocation[] = [
+  // Top metros
+  { city: "Mumbai", state: "Maharashtra", lat: 19.0760, lng: 72.8777 },
+  { city: "Delhi", state: "Delhi", lat: 28.7041, lng: 77.1025 },
+  { city: "Bengaluru", state: "Karnataka", lat: 12.9716, lng: 77.5946 },
+  { city: "Hyderabad", state: "Telangana", lat: 17.3850, lng: 78.4867 },
+  { city: "Chennai", state: "Tamil Nadu", lat: 13.0827, lng: 80.2707 },
+  { city: "Kolkata", state: "West Bengal", lat: 22.5726, lng: 88.3639 },
+  
+  // Tier 2 cities
+  { city: "Pune", state: "Maharashtra", lat: 18.5204, lng: 73.8567 },
+  { city: "Ahmedabad", state: "Gujarat", lat: 23.0225, lng: 72.5714 },
+  { city: "Jaipur", state: "Rajasthan", lat: 26.9124, lng: 75.7873 },
+  { city: "Lucknow", state: "Uttar Pradesh", lat: 26.8467, lng: 80.9462 },
+  { city: "Guwahati", state: "Assam", lat: 26.1445, lng: 91.7362 },
+  { city: "Silchar", state: "Assam", lat: 24.8170, lng: 92.7790 },
+  { city: "Chandigarh", state: "Chandigarh", lat: 30.7333, lng: 76.7794 },
+  { city: "Kochi", state: "Kerala", lat: 9.9312, lng: 76.2673 },
+  { city: "Indore", state: "Madhya Pradesh", lat: 22.7196, lng: 75.8577 },
+  { city: "Bhopal", state: "Madhya Pradesh", lat: 23.1815, lng: 79.9864 },
+  { city: "Nagpur", state: "Maharashtra", lat: 21.1458, lng: 79.0882 },
+  { city: "Coimbatore", state: "Tamil Nadu", lat: 11.0081, lng: 76.9124 },
+  
+  // Beach & tourism cities
+  { city: "Goa", state: "Goa", lat: 15.2993, lng: 73.8243 },
+  { city: "Jaipur", state: "Rajasthan", lat: 26.9124, lng: 75.7873 },
+  
+  // Tier 3 & tier 2 expansion
+  { city: "Visakhapatnam", state: "Andhra Pradesh", lat: 17.6869, lng: 83.2185 },
+  { city: "Vadodara", state: "Gujarat", lat: 22.3072, lng: 73.1812 },
+  { city: "Surat", state: "Gujarat", lat: 21.1458, lng: 72.8479 },
+  { city: "Ranchi", state: "Jharkhand", lat: 23.3441, lng: 85.3096 },
+  { city: "Srinagar", state: "Jammu & Kashmir", lat: 34.0837, lng: 74.7973 },
+  { city: "Thiruvananthapuram", state: "Kerala", lat: 8.5241, lng: 76.9366 },
+  { city: "Mysore", state: "Karnataka", lat: 12.2958, lng: 76.6394 },
+  { city: "Shimla", state: "Himachal Pradesh", lat: 31.7724, lng: 77.1092 },
+  { city: "Manali", state: "Himachal Pradesh", lat: 32.2396, lng: 77.1887 },
+  { city: "Rishikesh", state: "Uttarakhand", lat: 30.0886, lng: 78.2676 },
 ];
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -65,6 +87,8 @@ async function reverseGeocode(
       { headers: { "User-Agent": "MySlotMate/1.0" } },
     );
     const data = (await res.json()) as {
+      lat?: string;
+      lon?: string;
       address?: {
         city?: string;
         town?: string;
@@ -79,10 +103,24 @@ async function reverseGeocode(
     const city =
       addr.city ?? addr.town ?? addr.village ?? addr.state_district ?? addr.county ?? "Unknown";
     const state = addr.state ?? "";
-    return { city, state };
+    const resLat = parseFloat(data.lat ?? "0");
+    const resLng = parseFloat(data.lon ?? "0");
+    return { city, state, lat: resLat, lng: resLng };
   } catch {
     return null;
   }
+}
+
+/** Calculate distance between two points (Haversine formula) in kilometers */
+export function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLng = (lng2 - lng1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /* ── Component ─────────────────────────────────────────────── */
@@ -158,6 +196,8 @@ export default function LocationModal({
           { headers: { "User-Agent": "MySlotMate/1.0" } },
         );
         const data = (await res.json()) as {
+          lat?: string;
+          lon?: string;
           address?: {
             city?: string;
             town?: string;
@@ -180,7 +220,12 @@ export default function LocationModal({
           const key = `${city}-${addr.state ?? ""}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          results.push({ city, state: addr.state ?? "" });
+          results.push({ 
+            city, 
+            state: addr.state ?? "",
+            lat: parseFloat(item.lat ?? "0"),
+            lng: parseFloat(item.lon ?? "0")
+          });
         }
         setSearchResults(results);
       } catch {

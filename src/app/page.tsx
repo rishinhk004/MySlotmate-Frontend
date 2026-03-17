@@ -1,7 +1,6 @@
 "use client";
 import * as components from "../components";
 import { useState } from "react";
-import Link from "next/link";
 export default function HomePage() {
   const [mode, setMode] = useState("All");
   return (
@@ -56,29 +55,7 @@ export default function HomePage() {
       </div>
       <components.Home.Trending />
       <components.Home.Banner />
-      {/* Find People Like You - Dynamic Section */}
-      <div className="flex flex-col w-full px-6 md:px-12 lg:px-20">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Find People like You</h2>
-          <Link href="/experiences" className="text-[#0094CA] text-sm flex items-center gap-2 hover:opacity-80">
-            <span>see more</span>
-            <span className="bg-[#0094CA] w-8 h-8 flex items-center justify-center rounded-full">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </Link>
-        </div>
-
-        <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar">
-          <components.Home.TrendingCard title="Mountain Adventure Escape" imageUrl="/assets/home/hiking.jpg" pricing="₹500" />
-          <components.Home.TrendingCard title="Sunset Beach Retreat" imageUrl="/assets/home/dining.png" pricing="₹750" />
-          <components.Home.TrendingCard title="Cultural City Tour" imageUrl="/assets/home/jazz.png" pricing="₹800" />
-          <components.Home.TrendingCard title="Wildlife Safari Experience" imageUrl="/assets/home/pottery.png" pricing="₹600" />
-          <components.Home.TrendingCard title="Culinary Cooking Class" imageUrl="/assets/home/hiking.jpg" pricing="₹350" />
-          <components.Home.TrendingCard title="Luxury Spa Day" imageUrl="/assets/home/dining.png" pricing="₹900" />
-        </div>
-      </div>
+      <components.Home.AllHosts />
       <components.Home.Idea/>
       <components.Home.Footer/>
     </main>

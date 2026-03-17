@@ -11,6 +11,8 @@ export const queryKeys = {
     ["applicationStatus", userId] as const,
   myHost: (userId: string) => ["myHost", userId] as const,
   hostDashboard: (hostId: string) => ["hostDashboard", hostId] as const,
+  hostAttentionItems: (hostId: string) => ["hostAttentionItems", hostId] as const,
+  todaySchedule: (hostId: string) => ["todaySchedule", hostId] as const,
   eventsByHost: (hostId: string) => ["eventsByHost", hostId] as const,
   calendarEvents: (hostId: string) => ["calendarEvents", hostId] as const,
   hostEventsFiltered: (hostId: string, filters?: Record<string, string>) =>
@@ -35,6 +37,7 @@ export const queryKeys = {
   listPublicEvents: ["listPublicEvents"] as const,
   publicHostProfile: (hostId: string) => ["publicHostProfile", hostId] as const,
   pendingHostApplications: ["pendingHostApplications"] as const,
+  userProfile: (userId: string) => ["userProfile", userId] as const,
 };
 
 /* ═══ Queries ══════════════════════════════════════════════════ */
@@ -45,6 +48,16 @@ export function useMyProfile(userId: string | null) {
     queryFn: () => api.getMyProfile(userId!),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
+    select: (res) => res.data,
+  });
+}
+
+export function useUserProfile(userId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.userProfile(userId ?? ""),
+    queryFn: () => api.getMyProfile(userId!),
+    enabled: !!userId,
+    staleTime: 10 * 60 * 1000,
     select: (res) => res.data,
   });
 }
@@ -102,7 +115,13 @@ export function useMyHost(userId: string | null) {
     queryFn: () => api.getMyHost(userId!),
     enabled: !!userId,
     staleTime: 2 * 60 * 1000,
-    select: (res) => res.data,
+    select: (res) => {
+      console.log("📡 useMyHost API Response:", res);
+      console.log("   Avatar URL:", res.data?.avatar_url);
+      console.log("   Full Host Data:", res.data);
+      return res.data;
+    },
+   
   });
 }
 
@@ -147,9 +166,38 @@ export function usePublicHostProfile(hostId: string | null) {
 export function useHostDashboard(hostId: string | null, userId: string | null) {
   return useQuery({
     queryKey: queryKeys.hostDashboard(hostId ?? ""),
-    queryFn: () => api.getHostDashboard(hostId!, userId!),
+    queryFn: () => {
+      console.log("[useHostDashboard] Fetching with hostId:", hostId, "userId:", userId);
+      return api.getHostDashboard(hostId!, userId!).then((res) => {
+        console.log("[useHostDashboard] Full API Response object:", res);
+        console.log("[useHostDashboard] Response.data:", res.data);
+        console.log("[useHostDashboard] Response.data keys:", res.data ? Object.keys(res.data) : "null");
+        console.log("[useHostDashboard] Full stringified data:", JSON.stringify(res.data, null, 2));
+        return res;
+      });
+    },
     enabled: !!hostId && !!userId,
     staleTime: 60 * 1000,
+    select: (res) => res.data,
+  });
+}
+
+export function useHostAttentionItems(hostId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.hostAttentionItems(hostId ?? ""),
+    queryFn: () => api.getHostAttentionItems(hostId!),
+    enabled: !!hostId,
+    staleTime: 60 * 1000,
+    select: (res) => res.data?.items ?? [],
+  });
+}
+
+export function useTodaySchedule(hostId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.todaySchedule(hostId ?? ""),
+    queryFn: () => api.getTodaySchedule(hostId!),
+    enabled: !!hostId,
+    staleTime: 5 * 60 * 1000,
     select: (res) => res.data,
   });
 }
@@ -157,9 +205,18 @@ export function useHostDashboard(hostId: string | null, userId: string | null) {
 export function useEventsByHost(hostId: string | null) {
   return useQuery({
     queryKey: queryKeys.eventsByHost(hostId ?? ""),
-    queryFn: () => api.getEventsByHost(hostId!),
+    queryFn: () => {
+      console.log("[useEventsByHost] Fetching events for hostId:", hostId);
+      return api.getEventsByHost(hostId!).then((res) => {
+        console.log("[useEventsByHost] API Response:", res.data);
+        res.data?.forEach((event) => {
+          console.log(`[useEventsByHost] Event: ${event.title}, Bookings: ${event.total_bookings}`);
+        });
+        return res;
+      });
+    },
     enabled: !!hostId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0, // Set to 0 to always fetch fresh data
     select: (res) => res.data,
   });
 }
@@ -410,6 +467,40 @@ export function useUpdateHostProfile() {
   });
 }
 
+export function useConnectSocialMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      platform,
+      url,
+    }: {
+      userId: string;
+      platform: "instagram" | "linkedin" | "website" | "youtube" | "twitter";
+      url: string;
+    }) => api.connectSocialMedia(userId, platform, url),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["myHost"] });
+    },
+  });
+}
+
+export function useDisconnectSocialMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      platform,
+    }: {
+      userId: string;
+      platform: "instagram" | "linkedin" | "website" | "youtube" | "twitter";
+    }) => api.disconnectSocialMedia(userId, platform),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["myHost"] });
+    },
+  });
+}
+
 export function useUploadFiles() {
   return useMutation({
     mutationFn: ({ files, folder }: { files: File[]; folder?: string }) =>
@@ -522,9 +613,26 @@ export function useCreateBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: api.createBooking,
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      console.log("[useCreateBooking] Booking created:", data.data);
+      console.log("[useCreateBooking] Invalidating queries for bookingsByUser:", variables.user_id);
       void qc.invalidateQueries({
         queryKey: queryKeys.bookingsByUser(variables.user_id),
+      });
+      // Invalidate event queries since booking count changed
+      console.log("[useCreateBooking] Invalidating event query:", data.data.event_id);
+      void qc.invalidateQueries({
+        queryKey: queryKeys.event(data.data.event_id),
+      });
+      // Invalidate all eventsByHost queries to refresh booking counts
+      console.log("[useCreateBooking] Invalidating all eventsByHost queries");
+      void qc.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "eventsByHost",
+      });
+      // Also refresh public events list
+      console.log("[useCreateBooking] Invalidating listPublicEvents");
+      void qc.invalidateQueries({
+        queryKey: queryKeys.listPublicEvents,
       });
     },
   });
@@ -533,9 +641,23 @@ export function useCreateBooking() {
 export function useConfirmBooking() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (bookingId: string) => api.confirmBooking(bookingId),
+    mutationFn: (bookingId: string) => {
+      console.log("[useConfirmBooking] Confirming booking:", bookingId);
+      return api.confirmBooking(bookingId).then((res) => {
+        console.log("[useConfirmBooking] Response:", res.data);
+        return res;
+      });
+    },
     onSuccess: () => {
+      console.log("[useConfirmBooking] Confirmed! Invalidating queries");
       void qc.invalidateQueries({ queryKey: ["bookingsByUser"] });
+      // Refresh event queries since booking status changed
+      void qc.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "eventsByHost",
+      });
+      void qc.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "event",
+      });
     },
   });
 }
@@ -552,6 +674,13 @@ export function useCancelBooking() {
     }) => api.cancelBooking(bookingId, userId),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["bookingsByUser"] });
+      // Refresh event queries since booking status changed
+      void qc.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "eventsByHost",
+      });
+      void qc.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "event",
+      });
     },
   });
 }
@@ -629,6 +758,20 @@ export function useCreateReview() {
       });
       void qc.invalidateQueries({
         queryKey: queryKeys.eventRating(variables.event_id),
+      });
+    },
+  });
+}
+
+export function useAddReplyToReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, reply, eventId }: { reviewId: string; reply: string; eventId: string }) =>
+      api.addReplyToReview(reviewId, { reply }),
+    onSuccess: (_data, variables) => {
+      // Invalidate the specific event's reviews query with the eventId
+      void qc.invalidateQueries({
+        queryKey: queryKeys.reviewsByEvent(variables.eventId),
       });
     },
   });

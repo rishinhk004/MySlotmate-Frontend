@@ -68,6 +68,7 @@ interface ExperienceCardProps {
     time: string;
     avg_rating: number | null;
     total_bookings: number;
+    total_reviews: number;
     created_at: string;
     updated_at: string;
     paused_at: string | null;
@@ -80,6 +81,10 @@ interface ExperienceCardProps {
 function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: ExperienceCardProps) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
+
+  useEffect(() => {
+    console.log(`[ExperienceCard] ${event.title}: total_bookings = ${event.total_bookings}`);
+  }, [event.total_bookings, event.title]);
 
   const nextDate = event.status === "paused" ? null : event.time;
   const isPaused = event.status === "paused";
@@ -99,9 +104,9 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
     if (isDraft) {
       onResume(event.id);
     } else if (isPaused) {
-      router.push(`/#`);
+      return null;
     } else {
-      router.push(`/#`);
+      return null;
     }
   };
 
@@ -169,7 +174,7 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
                   <FiStar className="h-3.5 w-3.5 text-amber-400" />
                   {event.avg_rating.toFixed(1)}
                 </span>
-                <span className="text-[#0094CA]">({event.total_bookings})</span>
+                <span className="text-[#0094CA]">({event.total_reviews})</span>
               </>
             )}
             {(isDraft || (isLive && event.avg_rating === null)) && (
@@ -244,6 +249,17 @@ export default function ExperiencesPage() {
   const { data: host, isLoading: hostLoading } = useMyHost(userId);
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useEventsByHost(host?.id ?? null);
   const resumeEvent = useResumeEvent();
+
+  
+
+  useEffect(() => {
+    console.log("[ExperiencesPage] Events loaded:", events);
+    if (events) {
+      events.forEach((evt) => {
+        console.log(`  - ${evt.title}: ${evt.total_bookings} bookings`);
+      });
+    }
+  }, [events]);
 
   useEffect(() => {
     if (isHydrated && !userId && !hostLoading) {

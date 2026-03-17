@@ -266,7 +266,7 @@ export default function Navbar() {
                             <FiChevronRight className="h-4 w-4 text-gray-400" />
                           </Link>
                           <Link
-                            href="/activities"
+                            href="/saved-experiences"
                             onClick={() => setProfileOpen(false)}
                             className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition"
                           >
@@ -294,7 +294,7 @@ export default function Navbar() {
                             <FiChevronRight className="h-4 w-4 text-gray-400" />
                           </Link>
                           <Link
-                            href="/activities"
+                            href="/saved-experiences"
                             onClick={() => setProfileOpen(false)}
                             className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition"
                           >

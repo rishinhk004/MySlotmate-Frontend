@@ -60,6 +60,7 @@ export interface SignUpPayload {
   email: string;
   name: string;
   phn_number: string;
+  avatar_url?: string | null;
 }
 
 /** POST /auth/signup — 201 = created, 409 = already exists */
@@ -256,6 +257,29 @@ export function updateHostProfile(
   });
 }
 
+/** PUT /hosts/me/social — Connect a social media account */
+export function connectSocialMedia(
+  userId: string,
+  platform: "instagram" | "linkedin" | "website" | "youtube" | "twitter",
+  url: string,
+) {
+  return apiFetch<HostDTO>("/hosts/me/social", {
+    method: "PUT",
+    data: { user_id: userId, platform, url },
+  });
+}
+
+/** DELETE /hosts/me/social/{platform} — Disconnect a social media account */
+export function disconnectSocialMedia(
+  userId: string,
+  platform: "instagram" | "linkedin" | "website" | "youtube" | "twitter",
+) {
+  return apiFetch<HostDTO>(`/hosts/me/social/${platform}`, {
+    method: "DELETE",
+    params: { user_id: userId },
+  });
+}
+
 /** Public-facing host profile (no sensitive fields like phn_number, government_id_url, etc.) */
 export interface PublicHostProfileDTO {
   id: string;
@@ -337,15 +361,43 @@ export interface HostEarningsDTO {
 }
 
 export interface HostDashboardDTO {
-  host: HostDTO;
-  earnings: HostEarningsDTO;
   total_events: number;
   total_bookings: number;
+  total_earnings_cents: number;
+  avg_rating: number;
+  total_reviews: number;
+  upcoming_today: number;
+  monthly_bookings: number;
 }
 
 /** GET /hosts/dashboard?host_id=<uuid>&user_id=<uuid> */
 export function getHostDashboard(hostId: string, userId: string) {
   return apiFetch<HostDashboardDTO>("/hosts/dashboard", { params: { host_id: hostId, user_id: userId } });
+}
+
+export interface AttentionItemDTO {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  severity: "info" | "warning" | "critical";
+  action_url?: string;
+  action_label?: string;
+  created_at: string;
+}
+
+export interface HostAttentionItemsDTO {
+  items: AttentionItemDTO[];
+}
+
+/** GET /hosts/attention-items?host_id=<uuid> — get items needing attention */
+export function getHostAttentionItems(hostId: string) {
+  return apiFetch<HostAttentionItemsDTO>("/hosts/attention-items", { params: { host_id: hostId } });
+}
+
+/** GET /events/today/{hostID} — get today's schedule for a host */
+export function getTodaySchedule(hostId: string) {
+  return apiFetch<EventDTO[]>(`/events/today/${hostId}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -382,6 +434,7 @@ export interface EventDTO {
   paused_at: string | null;
   avg_rating: number | null;
   total_bookings: number;
+  total_reviews: number;
   created_at: string;
   updated_at: string;
   
@@ -389,7 +442,16 @@ export interface EventDTO {
 
 /** GET /events/host/{hostID} */
 export function getEventsByHost(hostId: string) {
-  return apiFetch<EventDTO[]>(`/events/host/${hostId}`);
+  console.log("[api.getEventsByHost] Fetching events for hostId:", hostId);
+  return apiFetch<EventDTO[]>(`/events/host/${hostId}`).then((envelope) => {
+    console.log("[api.getEventsByHost] API Response envelope:", envelope);
+    if (envelope.data && Array.isArray(envelope.data)) {
+      envelope.data.forEach((event) => {
+        console.log(`[api.getEventsByHost]   Event: "${event.title}" (${event.id}), total_bookings: ${event.total_bookings}`);
+      });
+    }
+    return envelope;
+  });
 }
 
 /** GET /events/ — list all published (live) events (public) */
@@ -756,6 +818,14 @@ export function createReview(body: CreateReviewPayload) {
   return apiFetch<ReviewDTO>("/reviews/", { method: "POST", data: body });
 }
 
+/** POST /reviews/{reviewId}/reply — host adds a reply to a review */
+export function addReplyToReview(reviewId: string, body: { reply: string }) {
+  return apiFetch<ReviewDTO>(`/reviews/${reviewId}/reply`, {
+    method: "POST",
+    data: body,
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*  Inbox                                                              */
 /* ------------------------------------------------------------------ */
@@ -774,6 +844,7 @@ export interface InboxMessageDTO {
 /** POST /inbox/send — send a message in an event thread */
 export function sendMessage(body: {
   event_id: string;
+  host_id: string;
   sender_type: "system" | "host" | "guest";
   sender_id?: string;
   message: string;

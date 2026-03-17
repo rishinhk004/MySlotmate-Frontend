@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useListPublicEvents } from "~/hooks/useApi";
-import { getSavedLocation, type CityLocation } from "../LocationModal";
+import { getSavedLocation, calculateDistance, type CityLocation } from "../LocationModal";
 import { LuLoader2 } from "react-icons/lu";
 
 interface TrendingCardProps {
@@ -52,20 +52,46 @@ const Trending = () => {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Filter events by location
+  // Filter events by distance (nearest first)
   const filteredEvents = useMemo(() => {
     if (!events) return [];
-    if (!mounted || !location) return events.slice(0, 8); // Show first 8 if not mounted or no location
+    if (!mounted || !location) {
+      console.log("📍 Trending: Not mounted or no location. Showing first 8 events. Total events:", events.length);
+      return events.slice(0, 8);
+    }
     
-    // Filter events whose location matches the selected city
-    const cityLower = location.city.toLowerCase();
-    const locationFiltered = events.filter((event) => {
-      const eventLocation = event.location?.toLowerCase() ?? "";
-      return eventLocation.includes(cityLower) || cityLower.includes(eventLocation);
+    console.log("🔍 Trending: Filtering by distance from:", { city: location.city, state: location.state });
+    console.log("   Total events from API:", events.length);
+    
+    // Calculate distance for each event
+    const eventsWithDistance = events.map((event) => {
+      let distance = Infinity; // Default: very far away
+      
+      // If event has coordinates, calculate distance
+      if (event.location_lat !== null && event.location_lng !== null) {
+        distance = calculateDistance(
+          location.lat,
+          location.lng,
+          event.location_lat,
+          event.location_lng
+        );
+        console.log(`   Event "${event.title}" at ${event.location} - Distance: ${distance.toFixed(1)}km`);
+      } else {
+        console.log(`   Event "${event.title}" - No coordinates, skipping distance filter`);
+        distance = Infinity; // Will appear at the end
+      }
+      
+      return { event, distance };
     });
     
-    // If no events in selected city, show all events
-    return locationFiltered.length > 0 ? locationFiltered.slice(0, 8) : events.slice(0, 8);
+    // Sort by distance (nearest first) and return top 8
+    const sorted = eventsWithDistance
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 8)
+      .map(({ event }) => event);
+    
+    console.log("   Showing", sorted.length, "nearest events");
+    return sorted;
   }, [events, location, mounted]);
 
   // Format price from cents to display string
@@ -80,14 +106,14 @@ const Trending = () => {
         <h1 className="text-xl font-semibold text-gray-900">
           Trending Now
         </h1>
-        <button className="text-[#0094CA] text-sm flex items-center gap-2 hover:opacity-80">
+        <Link href="/activities" className="text-[#0094CA] text-sm flex items-center gap-2 hover:opacity-80">
           <span>see more</span>
           <span className="bg-[#0094CA] w-8 h-8 flex items-center justify-center rounded-full">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </span>
-        </button>
+        </Link>
       </div>
 
       <div

@@ -173,7 +173,6 @@ function BookingWidget({
   totalBookings: number;
   onBook: (date: string, guests: number) => void;
 }) {
-  const [selectedDate, setSelectedDate] = useState("");
   const [guests, setGuests] = useState(1);
   const spotsLeft = capacity - totalBookings;
 
@@ -196,20 +195,27 @@ function BookingWidget({
         )}
       </div>
 
-      {/* Date Selector */}
+      {/* Date Display */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">DATE</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">DATE & TIME</label>
         <div className="relative">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            min={new Date().toISOString().split("T")[0]}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
-            placeholder="Select a date"
-          />
-          <FiCalendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 flex items-center gap-2 text-gray-700">
+            <FiCalendar size={18} className="text-[#0094CA]" />
+            <span className="font-medium">
+              {_eventDate 
+                ? new Date(_eventDate).toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                : "Date TBD"}
+            </span>
+          </div>
         </div>
+        <p className="text-xs text-gray-500 mt-1">This event is scheduled on the date and time shown above</p>
       </div>
 
       {/* Guests Selector */}
@@ -230,8 +236,8 @@ function BookingWidget({
 
       {/* Book Button */}
       <button
-        onClick={() => onBook(selectedDate, guests)}
-        disabled={!selectedDate || spotsLeft <= 0}
+        onClick={() => onBook(_eventDate, guests)}
+        disabled={!_eventDate || spotsLeft <= 0}
         className="w-full py-3 bg-[#0094CA] hover:bg-[#007ba8] text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Continue
@@ -606,7 +612,8 @@ export default function ExperienceDetailPage({
       toast.error("Please select a date");
       return;
     }
-    router.push(`/experience/${resolvedParams.id}/book?date=${date}&guests=${guests}`);
+    const encodedDate = encodeURIComponent(date);
+    router.push(`/experience/${resolvedParams.id}/book?date=${encodedDate}&guests=${guests}`);
   };
 
   // Parse description for "The Plan" section (simple implementation)
@@ -720,7 +727,7 @@ export default function ExperienceDetailPage({
               </div>
 
               {/* The Plan */}
-              <ThePlan items={planItems} />
+              {/* <ThePlan items={planItems} /> */}
 
               {/* Meet Your Host */}
               <MeetYourHost

@@ -17,13 +17,12 @@ import {
   LuCalendarDays,
   LuBookOpen,
   LuWallet,
-  LuCalendarClock,
   LuLightbulb,
 } from "react-icons/lu";
-import { useHostDashboard, useCalendarEvents } from "~/hooks/useApi";
+import { useHostDashboard, useCalendarEvents, useTodaySchedule, usePayoutHistory } from "~/hooks/useApi";
 
 /* ------------------------------------------------------------------ */
-/*  Attention items (static hints; could be API-driven later)          */
+/*  Attention items (dynamic + static hints)                             */
 /* ------------------------------------------------------------------ */
 
 interface AttentionItem {
@@ -34,27 +33,19 @@ interface AttentionItem {
   linkHref: string;
 }
 
-const ATTENTION: AttentionItem[] = [
+// Helper to format currency
+function fmtCurrency(cents: number): string {
+  return `₹${(cents / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Placeholder - will be replaced with dynamic version in component
+const STATIC_ATTENTION_ITEMS: AttentionItem[] = [
   {
     icon: <LuBookOpen className="h-5 w-5 text-white" />,
     title: "2 Booking Received",
     description: "Pending approval for next week.",
     linkText: "View Experiences",
     linkHref: "/host-dashboard/experiences",
-  },
-  {
-    icon: <LuWallet className="h-5 w-5 text-white" />,
-    title: "Payout Processed",
-    description: "$450.00 has been sent to your account.",
-    linkText: "View History",
-    linkHref: "/host-dashboard/earnings",
-  },
-  {
-    icon: <LuCalendarClock className="h-5 w-5 text-white" />,
-    title: "Update Availability",
-    description: "Your calendar is empty for next month.",
-    linkText: "Open Calendar",
-    linkHref: "/host-dashboard/calendar",
   },
 ];
 
@@ -81,14 +72,17 @@ export default function HostDashboardPage() {
   } = useHostDashboard(storedHostId, userId);
 
   const { data: calendarEvents } = useCalendarEvents(storedHostId);
+  const { data: todayScheduleData } = useTodaySchedule(storedHostId);
+  const { data: payoutHistory } = usePayoutHistory(storedHostId);
 
   // Debug: log error details
   useEffect(() => {
     console.log("Dashboard Debug - User ID:", userId, "Host ID:", storedHostId);
+    console.log("Dashboard API Response:", dashboard);
     if (queryError) {
       console.error("Dashboard Error:", queryError);
     }
-  }, [queryError, storedHostId, userId]);
+  }, [queryError, storedHostId, userId, dashboard]);
 
   const error = !storedHostId
     ? "No host profile found. Please apply as a host first."
@@ -96,23 +90,62 @@ export default function HostDashboardPage() {
       ? `Could not load dashboard. ${queryError instanceof Error ? queryError.message : "Please try again."}`
       : "";
 
-  /* Filter calendar events to today's schedule */
+  /* Use todayScheduleData if available, otherwise filter from calendarEvents */
   const todaySchedule = useMemo(() => {
+    if (todayScheduleData && todayScheduleData.length > 0) {
+      return todayScheduleData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+    }
     if (!calendarEvents) return [];
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
     return calendarEvents
       .filter((ev) => ev.time.slice(0, 10) === todayStr)
       .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-  }, [calendarEvents]);
+  }, [todayScheduleData, calendarEvents]);
+
+  /* Build dynamic attention items with recent payouts */
+  const attentionItems = useMemo(() => {
+    const items = [...STATIC_ATTENTION_ITEMS];
+    
+    // Find most recent completed payout
+    if (payoutHistory && payoutHistory.length > 0) {
+      const completedPayouts = payoutHistory.filter(p => p.status === "completed");
+      if (completedPayouts.length > 0) {
+        const recentPayout = completedPayouts[0];
+        if (recentPayout) {
+          items.push({
+            icon: <LuWallet className="h-5 w-5 text-white" />,
+            title: "Payout Processed",
+            description: `${fmtCurrency(recentPayout.amount_cents)} has been sent to your account.`,
+            linkText: "View History",
+            linkHref: "/host-dashboard/earnings",
+          });
+        }
+      }
+    }
+    
+    return items;
+  }, [payoutHistory]);
 
   /* Build stats from API data or fallback */
-  const totalEarnings = dashboard?.earnings
-    ? `$${(dashboard.earnings.total_earnings_cents / 100).toLocaleString()}`
-    : "$0";
-  const avgRating = dashboard?.host?.avg_rating?.toFixed(1) ?? "–";
-  const totalBookings = dashboard?.total_bookings ?? 0;
-  const totalEvents = dashboard?.total_events ?? 0;
+  const d = dashboard as unknown as Record<string, number | string | undefined>;
+  const earningsCents = (d?.total_earnings_cents as number) || 0;
+  const totalEarnings = `₹${(earningsCents / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  
+  const rating = (d?.avg_rating as number) || 0;
+  const avgRating = rating > 0 ? rating.toFixed(1) : "–";
+  
+  const totalBookings = (d?.total_bookings as number) || 0;
+  const totalEvents = (d?.total_events as number) || 0;
+
+  // Debug: log calculated stats
+  useEffect(() => {
+    console.log("Calculated Stats:");
+    console.log("  - totalEvents:", totalEvents);
+    console.log("  - totalBookings:", totalBookings);
+    console.log("  - totalEarnings:", totalEarnings);
+    console.log("  - avgRating:", avgRating);
+  }, [totalEvents, totalBookings, totalEarnings, avgRating]);
 
   const STATS = [
     {
@@ -135,8 +168,8 @@ export default function HostDashboardPage() {
       icon: <FiDollarSign className="h-5 w-5 text-[#0094CA]" />,
       label: "Total Earnings",
       value: totalEarnings,
-      sub: ".00",
-      badge: dashboard?.earnings ? `Pending $${(dashboard.earnings.pending_clearance_cents / 100).toFixed(0)}` : "",
+      sub: "",
+      badge: "All time",
       badgeColor: "bg-green-100 text-green-700",
     },
     {
@@ -144,7 +177,7 @@ export default function HostDashboardPage() {
       label: "Avg Rating",
       value: avgRating,
       sub: avgRating !== "–" ? "★★★★★" : "",
-      badge: `${dashboard?.host?.total_reviews ?? 0} reviews`,
+      badge: `${dashboard?.total_reviews ?? 0} reviews`,
       badgeColor: "bg-gray-100 text-gray-600",
     },
   ] as const;
@@ -341,7 +374,7 @@ export default function HostDashboardPage() {
               Needs Attention
             </h2>
             <div className="mt-4 space-y-3">
-              {ATTENTION.map((item, i) => (
+              {attentionItems.map((item, i) => (
                 <div
                   key={i}
                   className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4"
@@ -372,7 +405,7 @@ export default function HostDashboardPage() {
               </div>
               <h3 className="text-base font-bold">Host Tip</h3>
               <p className="mt-1 text-sm text-white/80">
-                Adding video to your experience page increases bookings by 30%
+                Adding video to your experience page increases bookings by 20%
                 on average.
               </p>
               <button className="mt-4 w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-[#0094CA] transition hover:bg-white/90">

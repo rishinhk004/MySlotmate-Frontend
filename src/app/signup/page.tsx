@@ -62,6 +62,7 @@ export default function SignUpPage() {
         email: user.email ?? "",
         name: name.trim(),
         phn_number: phn,
+        avatar_url: user.photoURL,
       });
       // Save user id for future API calls
       localStorage.setItem("msm_user_id", res.data.id);

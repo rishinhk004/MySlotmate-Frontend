@@ -81,13 +81,15 @@ function ExperienceSummaryCard({
   guests: number;
   totalPrice: number;
 }) {
-  const eventDate = new Date(date || event.time);
+  const dateToUse = date || event.time;
+  const eventDate = new Date(dateToUse);
+  const isValidDate = eventDate instanceof Date && !isNaN(eventDate.getTime());
   const spotsLeft = event.capacity - event.total_bookings;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h2>
-      
+
       {/* Mood Tags */}
       {event.mood && (
         <div className="flex gap-2 mb-4">
@@ -118,13 +120,13 @@ function ExperienceSummaryCard({
           <div className="flex items-center gap-2 text-sm">
             <FiCalendar className="text-gray-400" size={14} />
             <span className="font-medium">
-              {format(eventDate, "EEEE, MMM d")}
+              {isValidDate ? format(eventDate, "EEEE, MMM d") : "Date TBD"}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <FiClock className="text-gray-400" size={14} />
             <span>
-              {format(eventDate, "h:mm a")} ({event.duration_minutes ?? 60} min)
+              {isValidDate ? format(eventDate, "h:mm a") : "Time TBD"} ({event.duration_minutes ?? 60} min)
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -185,7 +187,7 @@ function BookingContent({ eventId }: { eventId: string }) {
     totalPriceCentsForBooking: number;
   } | null>(null);
 
-  const date = searchParams.get("date") ?? "";
+  const date = decodeURIComponent(searchParams.get("date") ?? "");
   const guests = parseInt(searchParams.get("guests") ?? "1");
 
   useEffect(() => {
@@ -446,9 +448,10 @@ function BookingContent({ eventId }: { eventId: string }) {
                   <div className="text-sm">
                     <p className="font-medium text-blue-800">
                       You can pay the remaining ₹{(shortfall / 100).toFixed(0)} directly
+                      Click &quot;Pay & Confirm&quot; below to pay via card/UPI and complete your booking.
                     </p>
                     <p className="text-blue-700 text-xs mt-1">
-                      Click "Pay & Confirm" below to pay via card/UPI and complete your booking.
+                      Click Pay and Confirm below to pay via card/UPI and complete your booking.
                     </p>
                   </div>
                 </div>

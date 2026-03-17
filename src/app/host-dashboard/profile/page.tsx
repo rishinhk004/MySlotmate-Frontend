@@ -22,6 +22,8 @@ import {
   useMyHost,
   useUpdateHostProfile,
   useUploadFiles,
+  useConnectSocialMedia,
+  useDisconnectSocialMedia,
 } from "~/hooks/useApi";
 
 /* ------------------------------------------------------------------ */
@@ -93,6 +95,8 @@ export default function HostProfileEditPage() {
   const { data: hostData, isLoading: loading } = useMyHost(validUserId);
   const updateMutation = useUpdateHostProfile();
   const uploadMutation = useUploadFiles();
+  const connectSocialMutation = useConnectSocialMedia();
+  const disconnectSocialMutation = useDisconnectSocialMedia();
   const saving = updateMutation.isPending;
 
   /* Populate form from API data */
@@ -120,6 +124,8 @@ export default function HostProfileEditPage() {
     }
   }, [hostData, user?.email]);
 
+
+
   /* helpers */
   const update = <K extends keyof HostProfileData>(
     key: K,
@@ -145,7 +151,9 @@ export default function HostProfileEditPage() {
   const handleAvatarChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (!file) return;
+      if (!file) {
+        return;
+      }
       const url = URL.createObjectURL(file);
       update("avatarUrl", url);
       setPendingAvatarFile(file);
@@ -170,7 +178,6 @@ export default function HostProfileEditPage() {
           avatarUrl = uploadRes.data[0]?.url;
           setPendingAvatarFile(null);
         } catch (uploadErr) {
-          console.warn("Avatar upload failed:", uploadErr);
         }
       }
 
@@ -188,7 +195,6 @@ export default function HostProfileEditPage() {
       });
       toast.success("Profile saved!");
     } catch (err) {
-      console.error("Save host profile error:", err);
       toast.error("Failed to save profile. Please try again.");
     }
   };
@@ -299,7 +305,7 @@ export default function HostProfileEditPage() {
 
               {/* Avatar */}
               <div className="mt-6 flex items-center gap-5">
-                {form.avatarUrl ? (
+                {form?.avatarUrl?.trim() ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={form.avatarUrl}
@@ -441,21 +447,70 @@ export default function HostProfileEditPage() {
                       <p className="text-sm font-semibold text-gray-900">
                         Instagram
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {form.socialInstagram || "Not connected"}
-                      </p>
+                      {form.socialInstagram ? (
+                        <p 
+                          onClick={() => window.open(form.socialInstagram, "_blank")}
+                          className="text-xs text-gray-500 cursor-pointer hover:text-[#0094CA] hover:underline transition"
+                        >
+                          {form.socialInstagram}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">Not connected</p>
+                      )}
                     </div>
                   </div>
                   {form.socialInstagram ? (
                     <button
-                      onClick={() => update("socialInstagram", "")}
+                      onClick={async () => {
+                        if (!validUserId) {
+                          toast.error("User ID not found");
+                          return;
+                        }
+                        try {
+                          await disconnectSocialMutation.mutateAsync({
+                            userId: validUserId,
+                            platform: "instagram",
+                          });
+                          update("socialInstagram", "");
+                          toast.success("Instagram disconnected");
+                        } catch (err) {
+                        toast.error("Failed to disconnect Instagram");
+                        }
+                      }}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       <FiX className="h-4 w-4" />
                     </button>
                   ) : (
-                    <button className="text-sm font-semibold text-[#0094CA] hover:underline">
-                      Connect
+                    <button 
+                      onClick={async () => {
+                        const val = prompt(
+                          "Enter your Instagram profile URL (e.g., https://instagram.com/username):",
+                          "https://instagram.com/",
+                        );
+                        if (val?.trim()) {
+                          if (!validUserId) {
+                            toast.error("User ID not found");
+                            return;
+                          }
+                          try {
+                            await connectSocialMutation.mutateAsync({
+                              userId: validUserId,
+                              platform: "instagram",
+                              url: val.trim(),
+                            });
+                            update("socialInstagram", val.trim());
+                            toast.success("Instagram connected!");
+                          } catch (err) {
+                            console.error("Failed to connect Instagram:", err);
+                            toast.error("Failed to connect Instagram");
+                          }
+                        }
+                      }}
+                      disabled={connectSocialMutation.isPending}
+                      className="text-sm font-semibold text-[#0094CA] hover:underline disabled:opacity-50"
+                    >
+                      {connectSocialMutation.isPending ? "Connecting..." : "Connect"}
                     </button>
                   )}
                 </div>
@@ -470,23 +525,71 @@ export default function HostProfileEditPage() {
                       <p className="text-sm font-semibold text-gray-900">
                         LinkedIn
                       </p>
-                      <p className="text-xs text-[#0094CA]">
-                        {form.socialLinkedin
-                          ? `Connected as ${form.socialLinkedin}`
-                          : "Not connected"}
-                      </p>
+                      {form.socialLinkedin ? (
+                        <p 
+                          onClick={() => window.open(form.socialLinkedin, "_blank")}
+                          className="text-xs text-[#0094CA] cursor-pointer hover:underline transition"
+                        >
+                          {form.socialLinkedin.includes("linkedin.com") ? form.socialLinkedin : `https://linkedin.com/in/${form.socialLinkedin}`}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">Not connected</p>
+                      )}
                     </div>
                   </div>
                   {form.socialLinkedin ? (
                     <button
-                      onClick={() => update("socialLinkedin", "")}
+                      onClick={async () => {
+                        if (!validUserId) {
+                          toast.error("User ID not found");
+                          return;
+                        }
+                        try {
+                          await disconnectSocialMutation.mutateAsync({
+                            userId: validUserId,
+                            platform: "linkedin",
+                          });
+                          update("socialLinkedin", "");
+                          toast.success("LinkedIn disconnected");
+                        } catch (err) {
+                          console.error("Failed to disconnect LinkedIn:", err);
+                          toast.error("Failed to disconnect LinkedIn");
+                        }
+                      }}
                       className="text-gray-400 hover:text-gray-600"
                     >
                       <FiX className="h-4 w-4" />
                     </button>
                   ) : (
-                    <button className="text-sm font-semibold text-[#0094CA] hover:underline">
-                      Connect
+                    <button 
+                      onClick={async () => {
+                        const val = prompt(
+                          "Enter your LinkedIn profile URL (e.g., https://linkedin.com/in/username):",
+                          "https://linkedin.com/in/",
+                        );
+                        if (val?.trim()) {
+                          if (!validUserId) {
+                            toast.error("User ID not found");
+                            return;
+                          }
+                          try {
+                            await connectSocialMutation.mutateAsync({
+                              userId: validUserId,
+                              platform: "linkedin",
+                              url: val.trim(),
+                            });
+                            update("socialLinkedin", val.trim());
+                            toast.success("LinkedIn connected!");
+                          } catch (err) {
+                            console.error("Failed to connect LinkedIn:", err);
+                            toast.error("Failed to connect LinkedIn");
+                          }
+                        }
+                      }}
+                      disabled={connectSocialMutation.isPending}
+                      className="text-sm font-semibold text-[#0094CA] hover:underline disabled:opacity-50"
+                    >
+                      {connectSocialMutation.isPending ? "Connecting..." : "Connect"}
                     </button>
                   )}
                 </div>
@@ -501,20 +604,62 @@ export default function HostProfileEditPage() {
                       <p className="text-sm font-semibold text-gray-900">
                         Website
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {form.socialWebsite || "Not set"}
-                      </p>
+                      {form.socialWebsite ? (
+                        <p 
+                          onClick={() => window.open(form.socialWebsite, "_blank")}
+                          className="text-xs text-gray-500 cursor-pointer hover:text-[#0094CA] hover:underline transition"
+                        >
+                          {form.socialWebsite}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">Not set</p>
+                      )}
                     </div>
                   </div>
                   <button
                     className="text-gray-400 hover:text-gray-600"
-                    onClick={() => {
+                    onClick={async () => {
                       const val = prompt(
-                        "Enter your website URL:",
+                        "Enter your website URL (e.g., https://example.com):",
                         form.socialWebsite,
                       );
-                      if (val !== null) update("socialWebsite", val);
+                      if (val?.trim()) {
+                        if (!validUserId) {
+                          toast.error("User ID not found");
+                          return;
+                        }
+                        try {
+                          await connectSocialMutation.mutateAsync({
+                            userId: validUserId,
+                            platform: "website",
+                            url: val.trim(),
+                          });
+                          update("socialWebsite", val.trim());
+                          toast.success("Website updated!");
+                        } catch (err) {
+                          console.error("Failed to update website:", err);
+                          toast.error("Failed to update website");
+                        }
+                      } else if (val === "" && form.socialWebsite) {
+                        // User cleared the website
+                        if (!validUserId) {
+                          toast.error("User ID not found");
+                          return;
+                        }
+                        try {
+                          await disconnectSocialMutation.mutateAsync({
+                            userId: validUserId,
+                            platform: "website",
+                          });
+                          update("socialWebsite", "");
+                          toast.success("Website removed");
+                        } catch (err) {
+                          console.error("Failed to remove website:", err);
+                          toast.error("Failed to remove website");
+                        }
+                      }
                     }}
+                    disabled={connectSocialMutation.isPending || disconnectSocialMutation.isPending}
                   >
                     <FiEdit2 className="h-4 w-4" />
                   </button>

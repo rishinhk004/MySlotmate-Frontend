@@ -16,10 +16,10 @@ const moodColorMap: Record<string, string> = {
   nightlife: "#9B59B6",
 };
 
-/** Format cents → "$45 / person" */
+/** Format cents → "₹45 / person" */
 function formatPrice(cents: number | null, isFree: boolean): string {
   if (isFree || cents === null || cents === 0) return "Free";
-  return `$${(cents / 100).toFixed(0)} / person`;
+  return `₹${(cents / 100).toFixed(0)} / person`;
 }
 
 /** Format ISO time → "Sat, Nov 18 • 2:00 PM" */
