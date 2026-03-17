@@ -82,7 +82,9 @@ export default function Navbar() {
   const { data: userProfile } = useMyProfile(validUserId);
   const { data: hostData, isLoading: hostLoading } = useApplicationStatus(validUserId);
 
-  const hostStatus = hostData?.application_status ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const hostStatus = hostData?.status?.application_status ?? null;
+  console.log("Host status:", hostData);
 
   const isAdminUser =
     !!user?.email &&
