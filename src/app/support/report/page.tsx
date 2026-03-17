@@ -93,13 +93,13 @@ export default function ReportIssuePage() {
   const { data: hostApplication } = useApplicationStatus(validUserId);
 
   useEffect(() => {
-    if (!storedHostId && hostApplication?.id) {
-      setStoredHostId(hostApplication.id);
-      localStorage.setItem("msm_host_id", hostApplication.id);
+    if (!storedHostId && hostApplication?.status?.id) {
+      setStoredHostId(hostApplication.status.id);
+      localStorage.setItem("msm_host_id", hostApplication.status.id);
     }
-  }, [hostApplication?.id, storedHostId]);
+  }, [hostApplication?.status?.id, storedHostId]);
 
-  const resolvedHostId = storedHostId ?? hostApplication?.id ?? null;
+  const resolvedHostId = storedHostId ?? hostApplication?.status?.id ?? null;
   const { data: hostEvents } = useEventsByHost(resolvedHostId);
 
   const experienceOptions = useMemo(() => {

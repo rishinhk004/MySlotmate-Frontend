@@ -62,7 +62,7 @@ export function useUserProfile(userId: string | null) {
   });
 }
 
-export function useApplicationStatus(userId: string | null): UseQueryResult<Partial<api.HostApplicationDTO> | undefined> {
+export function useApplicationStatus(userId: string | null): UseQueryResult<api.ApplicationStatusResponse> {
   return useQuery({
     queryKey: queryKeys.applicationStatus(userId ?? ""),
     queryFn: async () => {
@@ -78,9 +78,9 @@ export function useApplicationStatus(userId: string | null): UseQueryResult<Part
         if (status === 404) {
           return {
             success: false,
-            data: undefined,
+            data: {},
             error: "No application found",
-          } as unknown as api.Envelope<api.HostDTO>;
+          } as api.Envelope<api.ApplicationStatusResponse>;
         }
         
         // For any other error, if it contains "application" or "already", 
@@ -89,10 +89,12 @@ export function useApplicationStatus(userId: string | null): UseQueryResult<Part
           return {
             success: true,
             data: {
-              id: userId ?? "",
-              application_status: "pending" as const,
-            } satisfies Partial<api.HostDTO>,
-          } as api.Envelope<api.HostDTO>;
+              status: {
+                id: userId ?? "",
+                application_status: "pending" as const,
+              }
+            },
+          } as api.Envelope<api.ApplicationStatusResponse>;
         }
         
         // Re-throw other errors

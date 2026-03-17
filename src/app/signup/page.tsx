@@ -73,16 +73,13 @@ export default function SignUpPage() {
       if (apiErr.status === 409) {
         // User already exists — fetch their ID from Firebase UID
         try {
-          console.log("409 conflict — fetching user from Firebase UID:", user.uid);
           const profileRes = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/users/by-firebase/${user.uid}`,
           );
           if (profileRes.ok) {
             const response = (await profileRes.json()) as { data?: { id?: string } };
-            console.log("Fetch response:", response);
             const userId = response.data?.id;
             if (userId) {
-              console.log("Extracted user ID:", userId);
               localStorage.setItem("msm_user_id", userId);
               toast.info("Welcome back!");
               router.replace("/");
@@ -97,7 +94,6 @@ export default function SignUpPage() {
           console.error("Fetch error:", fetchErr);
         }
         // Fallback: redirect and let Navbar handle it
-        console.log("Falling back to redirect without ID");
         toast.info("Welcome back!");
         router.replace("/");
       } else {

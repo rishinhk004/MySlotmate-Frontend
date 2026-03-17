@@ -233,6 +233,7 @@ export function saveHostDraft(body: HostApplicationPayload) {
 
 export interface ApplicationStatusResponse {
   status?: {
+    id: string;
     application_status: "draft" | "pending" | "under_review" | "approved" | "rejected";
   };
 }

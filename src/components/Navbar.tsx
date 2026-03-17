@@ -103,10 +103,10 @@ export default function Navbar() {
   const showBecomeHostButton = !hostLoading && !!validUserId && !hostStatus;
 
   useEffect(() => {
-    if (hostData?.id) {
-      localStorage.setItem("msm_host_id", hostData?.status.id);
+    if (hostData?.status?.id) {
+      localStorage.setItem("msm_host_id", hostData.status.id);
     }
-  }, [hostData?.id, hostData?.status.id]);
+  }, [hostData?.status?.id]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
