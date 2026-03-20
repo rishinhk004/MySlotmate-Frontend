@@ -31,7 +31,11 @@ export async function apiFetch<T>(
     const data = axErr.response?.data;
     const msg = data?.error ?? data?.message ?? axErr.message;
     const error = new Error(msg);
-    (error as Error & { status: number }).status = axErr.response?.status ?? 500;
+    (error as Error & { status: number; data?: Envelope<T> }).status = axErr.response?.status ?? 500;
+    // Preserve response data for error cases (e.g., 409 conflict may still contain user data)
+    if (data) {
+      (error as Error & { status: number; data?: Envelope<T> }).data = data;
+    }
     throw error;
   }
 }
@@ -60,6 +64,7 @@ export interface SignUpPayload {
   email: string;
   name: string;
   phn_number: string;
+  avatar_url?: string | null;
 }
 
 /** POST /auth/signup — 201 = created, 409 = already exists */
@@ -196,6 +201,9 @@ export interface HostDTO {
   updated_at: string;
 }
 
+export interface HostApplicationDTO {
+  status: HostDTO;
+}
 export interface HostApplicationPayload {
   user_id: string;
   first_name: string;
@@ -223,9 +231,16 @@ export function saveHostDraft(body: HostApplicationPayload) {
   return apiFetch<HostDTO>("/hosts/apply/draft", { method: "POST", data: body });
 }
 
+export interface ApplicationStatusResponse {
+  status?: {
+    id: string;
+    application_status: "draft" | "pending" | "under_review" | "approved" | "rejected";
+  };
+}
+
 /** GET /hosts/application-status?user_id=<uuid> */
 export function getApplicationStatus(userId: string) {
-  return apiFetch<HostDTO>("/hosts/application-status", { params: { user_id: userId } });
+  return apiFetch<ApplicationStatusResponse>("/hosts/application-status", { params: { user_id: userId } });
 }
 
 /** GET /hosts/me?user_id=<uuid> */
@@ -256,6 +271,95 @@ export function updateHostProfile(
   });
 }
 
+/** PUT /hosts/me/social — Connect a social media account */
+export function connectSocialMedia(
+  userId: string,
+  platform: "instagram" | "linkedin" | "website" | "youtube" | "twitter",
+  url: string,
+) {
+  return apiFetch<HostDTO>("/hosts/me/social", {
+    method: "PUT",
+    data: { user_id: userId, platform, url },
+  });
+}
+
+/** DELETE /hosts/me/social/{platform} — Disconnect a social media account */
+export function disconnectSocialMedia(
+  userId: string,
+  platform: "instagram" | "linkedin" | "website" | "youtube" | "twitter",
+) {
+  return apiFetch<HostDTO>(`/hosts/me/social/${platform}`, {
+    method: "DELETE",
+    params: { user_id: userId },
+  });
+}
+
+/** Public-facing host profile (no sensitive fields like phn_number, government_id_url, etc.) */
+export interface PublicHostProfileDTO {
+  id: string;
+  first_name: string;
+  last_name: string;
+  city: string;
+  avatar_url: string | null;
+  tagline: string | null;
+  bio: string | null;
+  is_identity_verified: boolean;
+  is_super_host: boolean;
+  is_community_champ: boolean;
+  expertise_tags: string[];
+  social_instagram: string | null;
+  social_linkedin: string | null;
+  social_website: string | null;
+  avg_rating: number | null;
+  total_reviews: number;
+}
+
+/** GET /hosts — list all approved hosts (public) */
+export function listHosts() {
+  return apiFetch<PublicHostProfileDTO[]>("/hosts");
+}
+
+/** GET /hosts/{hostID} — view a host's public profile */
+export function getPublicHostProfile(hostId: string) {
+  return apiFetch<PublicHostProfileDTO>(`/hosts/${hostId}`);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Admin                                                              */
+/* ------------------------------------------------------------------ */
+
+function getAuthHeader(idToken: string) {
+  return { Authorization: `Bearer ${idToken}` };
+}
+
+/** GET /admin/hosts/applications — list all pending host applications */
+export function listPendingHostApplications(idToken: string) {
+  return apiFetch<HostDTO[]>("/admin/hosts/applications", {
+    headers: getAuthHeader(idToken),
+  });
+}
+
+/** POST /admin/hosts/{hostID}/approve — approve host application */
+export function approveHostApplication(hostId: string, idToken: string) {
+  return apiFetch<HostDTO>(`/admin/hosts/${hostId}/approve`, {
+    method: "POST",
+    headers: getAuthHeader(idToken),
+  });
+}
+
+/** POST /admin/hosts/{hostID}/reject — reject host application */
+export function rejectHostApplication(
+  hostId: string,
+  idToken: string,
+  reason?: string,
+) {
+  return apiFetch<HostDTO>(`/admin/hosts/${hostId}/reject`, {
+    method: "POST",
+    headers: getAuthHeader(idToken),
+    data: reason ? { reason } : {},
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*  Host Dashboard                                                     */
 /* ------------------------------------------------------------------ */
@@ -271,15 +375,43 @@ export interface HostEarningsDTO {
 }
 
 export interface HostDashboardDTO {
-  host: HostDTO;
-  earnings: HostEarningsDTO;
   total_events: number;
   total_bookings: number;
+  total_earnings_cents: number;
+  avg_rating: number;
+  total_reviews: number;
+  upcoming_today: number;
+  monthly_bookings: number;
 }
 
-/** GET /hosts/dashboard?host_id=<uuid> */
-export function getHostDashboard(hostId: string) {
-  return apiFetch<HostDashboardDTO>("/hosts/dashboard", { params: { host_id: hostId } });
+/** GET /hosts/dashboard?host_id=<uuid>&user_id=<uuid> */
+export function getHostDashboard(hostId: string, userId: string) {
+  return apiFetch<HostDashboardDTO>("/hosts/dashboard", { params: { host_id: hostId, user_id: userId } });
+}
+
+export interface AttentionItemDTO {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  severity: "info" | "warning" | "critical";
+  action_url?: string;
+  action_label?: string;
+  created_at: string;
+}
+
+export interface HostAttentionItemsDTO {
+  items: AttentionItemDTO[];
+}
+
+/** GET /hosts/attention-items?host_id=<uuid> — get items needing attention */
+export function getHostAttentionItems(hostId: string) {
+  return apiFetch<HostAttentionItemsDTO>("/hosts/attention-items", { params: { host_id: hostId } });
+}
+
+/** GET /events/today/{hostID} — get today's schedule for a host */
+export function getTodaySchedule(hostId: string) {
+  return apiFetch<EventDTO[]>(`/events/today/${hostId}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -316,13 +448,20 @@ export interface EventDTO {
   paused_at: string | null;
   avg_rating: number | null;
   total_bookings: number;
+  total_reviews: number;
   created_at: string;
   updated_at: string;
+  
 }
 
 /** GET /events/host/{hostID} */
 export function getEventsByHost(hostId: string) {
   return apiFetch<EventDTO[]>(`/events/host/${hostId}`);
+}
+
+/** GET /events/ — list all published (live) events (public) */
+export function listPublicEvents() {
+  return apiFetch<EventDTO[]>("/events/");
 }
 
 /** GET /events/{eventID} */
@@ -684,6 +823,14 @@ export function createReview(body: CreateReviewPayload) {
   return apiFetch<ReviewDTO>("/reviews/", { method: "POST", data: body });
 }
 
+/** POST /reviews/{reviewId}/reply — host adds a reply to a review */
+export function addReplyToReview(reviewId: string, body: { reply: string }) {
+  return apiFetch<ReviewDTO>(`/reviews/${reviewId}/reply`, {
+    method: "POST",
+    data: body,
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*  Inbox                                                              */
 /* ------------------------------------------------------------------ */
@@ -702,6 +849,7 @@ export interface InboxMessageDTO {
 /** POST /inbox/send — send a message in an event thread */
 export function sendMessage(body: {
   event_id: string;
+  host_id: string;
   sender_type: "system" | "host" | "guest";
   sender_id?: string;
   message: string;
@@ -803,5 +951,55 @@ export function addSupportMessage(ticketId: string, message: string) {
 export function resolveSupportTicket(ticketId: string) {
   return apiFetch<SupportTicketDTO>(`/support/${ticketId}/resolve`, {
     method: "POST",
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WALLET / TOP-UP
+   ══════════════════════════════════════════════════════════════════════════ */
+
+export interface WalletBalanceDTO {
+  account_id: string;
+  balance_cents: number; // balance in paise (100 paise = ₹1)
+}
+
+export interface TopupOrderDTO {
+  order_id: string; // Razorpay order ID
+  key_id: string; // Razorpay key for frontend
+  amount_cents: number;
+  currency: string;
+}
+
+export interface CreateTopupPayload {
+  user_id: string;
+  amount_cents: number;
+  idempotency_key: string;
+}
+
+export interface TopupVerifyPayload {
+  user_id: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+/** GET /users/wallet/balance — get user's wallet balance */
+export function getWalletBalance(userId: string) {
+  return apiFetch<WalletBalanceDTO>(`/users/wallet/balance?user_id=${userId}`);
+}
+
+/** POST /users/wallet/topup — create a Razorpay order for topping up wallet */
+export function createTopupOrder(payload: CreateTopupPayload) {
+  return apiFetch<TopupOrderDTO>("/users/wallet/topup", {
+    method: "POST",
+    data: payload,
+  });
+}
+
+/** POST /users/wallet/topup/verify — verify Razorpay payment and credit wallet */
+export function verifyTopupPayment(payload: TopupVerifyPayload) {
+  return apiFetch<WalletBalanceDTO>("/users/wallet/topup/verify", {
+    method: "POST",
+    data: payload,
   });
 }

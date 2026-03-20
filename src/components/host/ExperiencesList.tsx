@@ -1,6 +1,6 @@
 "use client";
 
-import { type Event } from "~/data/hostProfile";
+import { type EventDTO } from "~/lib/api";
 import { HiOutlineCalendar } from "react-icons/hi";
 
 /** Map mood → colour for badge */
@@ -16,10 +16,10 @@ const moodColorMap: Record<string, string> = {
   nightlife: "#9B59B6",
 };
 
-/** Format cents → "$45 / person" */
+/** Format cents → "₹45 / person" */
 function formatPrice(cents: number | null, isFree: boolean): string {
   if (isFree || cents === null || cents === 0) return "Free";
-  return `$${(cents / 100).toFixed(0)} / person`;
+  return `₹${(cents / 100).toFixed(0)} / person`;
 }
 
 /** Format ISO time → "Sat, Nov 18 • 2:00 PM" */
@@ -38,7 +38,7 @@ function formatEventDate(iso: string): string {
     });
 }
 
-function ExperienceCard({ event }: { event: Event }) {
+function ExperienceCard({ event }: { event: EventDTO }) {
   const moodColor =
     event.mood ? (moodColorMap[event.mood] ?? "#0094CA") : "#0094CA";
 
@@ -88,7 +88,7 @@ function ExperienceCard({ event }: { event: Event }) {
 export default function ExperiencesList({
   events,
 }: {
-  events: Event[];
+  events: EventDTO[];
 }) {
   return (
     <div>

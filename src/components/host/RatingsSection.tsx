@@ -1,11 +1,10 @@
 "use client";
 
-import { type Review, type User } from "~/data/hostProfile";
+import { useState } from "react";
+import { type ReviewDTO } from "~/lib/api";
 import { FaStar } from "react-icons/fa";
-
-type ReviewWithReviewer = Review & {
-  reviewer: Pick<User, "id" | "name" | "avatar_url">;
-};
+import { useUserProfile } from "~/hooks/useApi";
+import { useAddReplyToReview } from "~/hooks/useApi";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -46,8 +45,30 @@ function sentimentLabel(score: number | null): {
   return { text: "Genuine", color: "#0094CA" };
 }
 
-function ReviewCard({ review }: { review: ReviewWithReviewer }) {
+function ReviewCard({ review, hostId }: { review: ReviewDTO; hostId?: string }) {
+  const [replyText, setReplyText] = useState("");
+  const [showReplyInput, setShowReplyInput] = useState(false);
+  const { mutate: addReply, isPending: isReplying } = useAddReplyToReview();
+  
   const label = sentimentLabel(review.sentiment_score);
+  const { data: reviewer } = useUserProfile(review.user_id);
+  
+  const reviewerName = reviewer?.name ?? review.name ?? "Anonymous Reviewer";
+  const reviewerAvatar = reviewer?.avatar_url ?? "/assets/home/avatar-placeholder.png";
+
+  const handleReplySubmit = () => {
+    if (replyText.trim()) {
+      addReply(
+        { reviewId: review.id, reply: replyText, eventId: review.event_id },
+        {
+          onSuccess: () => {
+            setReplyText("");
+            setShowReplyInput(false);
+          },
+        }
+      );
+    }
+  };
 
   return (
     <div className="border-b border-gray-100 py-4 last:border-b-0">
@@ -55,13 +76,15 @@ function ReviewCard({ review }: { review: ReviewWithReviewer }) {
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={review.reviewer.avatar_url ?? "/assets/home/avatar-placeholder.png"}
-            alt={review.reviewer.name}
+            src={reviewerAvatar}
+            alt={reviewerName}
             className="h-8 w-8 rounded-full object-cover"
           />
-          <span className="text-sm font-semibold text-gray-900">
-            {review.name ?? review.reviewer.name}
-          </span>
+          <div>
+            <span className="block text-sm font-bold text-gray-900">
+              {reviewerName}
+            </span>
+          </div>
         </div>
         <span className="text-xs text-gray-400">
           {timeAgo(review.created_at)}
@@ -70,13 +93,64 @@ function ReviewCard({ review }: { review: ReviewWithReviewer }) {
       <p className="mt-2 text-sm italic text-gray-600">
         &ldquo;{review.description}&rdquo;
       </p>
-      {label.text && (
-        <span
-          className="mt-2 inline-block text-xs font-semibold italic"
-          style={{ color: label.color }}
-        >
-          {label.text}
-        </span>
+      <div className="mt-2 flex items-center justify-between">
+        {label.text && (
+          <span
+            className="text-xs font-semibold italic"
+            style={{ color: label.color }}
+          >
+            {label.text}
+          </span>
+        )}
+        {hostId && !showReplyInput && !review.reply?.length && (
+          <button
+            onClick={() => setShowReplyInput(true)}
+            className="text-xs font-semibold text-[#0094CA] hover:text-[#007aa8] transition"
+          >
+            Add Reply
+          </button>
+        )}
+      </div>
+      {review.reply && review.reply.length > 0 && (
+        <div className="mt-3 border-l-2 border-gray-300 bg-gray-50 p-3">
+          <p className="text-xs font-semibold text-gray-700 mb-1">Host Reply:</p>
+          {review.reply.map((replyText, idx) => (
+            <p key={idx} className="text-sm text-gray-600">
+              {replyText}
+            </p>
+          ))}
+        </div>
+      )}
+      {hostId && showReplyInput && (
+        <div className="mt-3 border-l-2 border-[#0094CA] bg-blue-50 p-3">
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Write your reply..."
+              className="w-full rounded border border-gray-300 p-2 text-sm focus:border-[#0094CA] focus:outline-none"
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleReplySubmit}
+                disabled={!replyText.trim() || isReplying}
+                className="rounded bg-[#0094CA] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#007aa8] disabled:bg-gray-300 transition"
+              >
+                {isReplying ? "Sending..." : "Send Reply"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowReplyInput(false);
+                  setReplyText("");
+                }}
+                className="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-gray-400 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -86,10 +160,12 @@ export default function RatingsSection({
   avg_rating,
   total_reviews,
   reviews,
+  hostId,
 }: {
   avg_rating: number;
   total_reviews: number;
-  reviews: ReviewWithReviewer[];
+  reviews: ReviewDTO[];
+  hostId?: string;
 }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -107,7 +183,7 @@ export default function RatingsSection({
       {/* Reviews list */}
       <div className="mt-4">
         {reviews.map((r) => (
-          <ReviewCard key={r.id} review={r} />
+          <ReviewCard key={r.id} review={r} hostId={hostId} />
         ))}
       </div>
 
