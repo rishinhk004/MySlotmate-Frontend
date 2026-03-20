@@ -74,7 +74,7 @@ const AllHosts = () => {
       </div>
 
       <div
-        className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar"
+        className="flex flex-row items-center justify-center gap-6 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {isLoading ? (
