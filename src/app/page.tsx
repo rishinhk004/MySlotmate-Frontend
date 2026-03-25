@@ -3,10 +3,52 @@ import * as components from "../components";
 import { useState, useLayoutEffect, useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Star, Compass, PartyPopper, Leaf } from 'lucide-react';
 
 // Register the plugin
 gsap.registerPlugin(ScrollTrigger);
+const FilterBar = () => {
+  // State to track which button is currently active
+  const [activeTab, setActiveTab] = useState('All');
 
+  // Tab data with corresponding icons
+  const tabs = [
+    { name: 'All', icon: <Star className="w-5 h-5" /> },
+    { name: 'Adventure', icon: <Compass className="w-5 h-5" /> },
+    { name: 'Social', icon: <PartyPopper className="w-5 h-5" /> },
+    { name: 'Wellness', icon: <Leaf className="w-5 h-5" /> },
+  ];
+
+  return (
+    <div className="flex items-center gap-2 p-1.5 border border-sky-200 rounded-full w-max" style={{backgroundImage:"linear-gradient(90.49deg, rgba(0, 148, 202, 0.2) 1.01%, rgba(0, 148, 202, 0.1) 103.34%)"}}>
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.name;
+
+        return (
+          <button
+            key={tab.name}
+            onClick={() => setActiveTab(tab.name)}
+            className={`
+              flex items-center gap-2 px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ease-in-out
+              ${isActive
+                ? 'text-white shadow-md'
+                : 'text-[#9ECADA] hover:text-[#0094CA]'}
+              }
+            `}
+            style={{
+              background: isActive
+                ? "linear-gradient(83.25deg, #0094CA -2.39%, #D5F4FF 148.84%)"
+                : "#FFFFFF66",
+            }}
+          >
+            {tab.icon}
+            <span>{tab.name}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 export default function HomePage() {
   const [mode, setMode] = useState<string>("All");
   const [hostId, setHostId] = useState<string | null>(null);
@@ -31,8 +73,8 @@ export default function HomePage() {
             opacity: 1,
             y: 0,
             duration: 0.8,
-            ease: "power2.out",
-          }
+            ease: "power2.out"
+          },
         );
       });
     }, mainRef);
@@ -41,8 +83,8 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main 
-      ref={mainRef} 
+    <main
+      ref={mainRef}
       // justify-start keeps the vertical flow, items-center centers horizontally
       className="overflow-hidden flex min-h-screen flex-col gap-12 items-center justify-start bg-linear-to-b from-[#e4f8ff] to-white text-[#000000] pb-16"
     >
@@ -51,36 +93,18 @@ export default function HomePage() {
       {/* Each 'scroll-fade' div is now a flex container 
           with 'items-center' to ensure the component inside is centered 
       */}
-      
+
       <div className="scroll-fade w-full flex flex-col items-center">
         <components.Home.Hero />
       </div>
-      
+
       <div className="scroll-fade w-full flex flex-col items-center">
         <components.Home.people currentHostId={hostId} />
       </div>
 
       <div className="scroll-fade w-full flex flex-col items-center site-x">
-        <div className="flex gap-3 flex-wrap justify-center">
-          {["All", "Adventure", "Social", "Wellness"].map((cat) => (
-            <button 
-              key={cat}
-              onClick={() => setMode(cat)} 
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                mode === cat 
-                  ? "bg-[#0094CA] text-white" 
-                  : "bg-white border border-gray-200 text-gray-700 hover:border-[#0094CA]"
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                {cat === "All" && "🏠"}
-                {cat === "Adventure" && "⛰️"}
-                {cat === "Social" && "🎉"}
-                {cat === "Wellness" && "🧘"}
-                {cat}
-              </span>
-            </button>
-          ))}
+        <div className="flex gap-3 flex-wrap justify-center w-full">
+          <FilterBar />
         </div>
       </div>
 
@@ -92,10 +116,10 @@ export default function HomePage() {
         <components.Home.Banner />
       </div>
 
-      <div className="scroll-fade w-full flex flex-col items-center">
+      <div className="scroll-fade w-full flex flex-col items-center gap-[5rem]">
         <components.Home.AllHosts currentHostId={hostId} />
-        <components.Home.Idea/>
-        <components.Home.Footer/>
+        <components.Home.Idea />
+        <components.Home.Footer />
       </div>
     </main>
   );

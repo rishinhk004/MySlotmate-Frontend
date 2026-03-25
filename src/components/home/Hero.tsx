@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useRef } from "react";
 import HeroCard from "./HeroCard";
 
 const Hero: React.FC = () => {
@@ -37,12 +37,14 @@ const Hero: React.FC = () => {
                     </div>
                 </div>
 
-                <div className='flex flex-col items-center justify-center gap-4 lg:gap-0'>
-                    <div className="lg:translate-x-[10rem] lg:translate-y-[1rem]">
+                <div className='group flex flex-col items-center justify-center gap-4 lg:gap-0'>
+                    <div className="origin-bottom-right transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[1rem] lg:group-hover:rotate-[7deg]">
                         <HeroCard photo="/assets/home/heropic1.png" type="Adventure" title="Mountain Trekking" description="..." duration="2 days" />
                     </div>
-                    <HeroCard photo="/assets/home/heropic2.png" type="Adventure" title="Scuba Diving" description="..." duration="1 day" />
-                    <div className="lg:translate-x-[10rem] lg:translate-y-[-1rem]">
+                    <div className="origin-center transition-transform duration-500 ease-out lg:group-hover:-rotate-[7deg]">
+                        <HeroCard photo="/assets/home/heropic2.png" type="Adventure" title="Scuba Diving" description="..." duration="1 day" />
+                    </div>
+                    <div className="origin-top-left transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[-1rem] lg:group-hover:rotate-[7deg]">
                         <HeroCard photo="/assets/home/heropic3.png" type="Chill" title="Urban Photography Walk" description="..." duration="4 hours" />
                     </div>
                 </div>
