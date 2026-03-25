@@ -39,7 +39,7 @@ const Hero: React.FC = () => {
 
                 <div className='group relative isolate flex flex-col items-center justify-center gap-4 lg:gap-0'>
                     <div
-                        className="pointer-events-none absolute inset-[-8rem] -z-0"
+                        className="pointer-events-none absolute inset-[-8rem] -z-0 rounded-lg opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
                         style={{
                             backgroundImage:
                                 "radial-gradient(circle at center, #44000011 0%, rgba(68, 0, 0, 0.05) 34%, rgba(68, 0, 0, 0) 82%), linear-gradient(to right, rgba(255, 255, 255, 0.62) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.62) 1px, transparent 1px)",
