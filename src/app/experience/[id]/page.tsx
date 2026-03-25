@@ -178,6 +178,9 @@ function BookingWidget({
 
   const formattedPrice = isFree ? "Free" : `₹${((price ?? 0) / 100).toFixed(0)}`;
 
+  // Check if event date has passed
+  const eventHasPassed = _eventDate ? new Date(_eventDate) < new Date() : false;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm sticky top-24">
       {/* Price and Rating */}
@@ -219,34 +222,45 @@ function BookingWidget({
       </div>
 
       {/* Guests Selector */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">GUESTS</label>
-        <select
-          value={guests}
-          onChange={(e) => setGuests(parseInt(e.target.value))}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none appearance-none bg-white"
-        >
-          {Array.from({ length: Math.min(spotsLeft, 10) }, (_, i) => i + 1).map((n) => (
-            <option key={n} value={n}>
-              {n} Guest{n > 1 ? "s" : ""}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!eventHasPassed && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">GUESTS</label>
+          <select
+            value={guests}
+            onChange={(e) => setGuests(parseInt(e.target.value))}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none appearance-none bg-white"
+          >
+            {Array.from({ length: Math.min(spotsLeft, 10) }, (_, i) => i + 1).map((n) => (
+              <option key={n} value={n}>
+                {n} Guest{n > 1 ? "s" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-      {/* Book Button */}
-      <button
-        onClick={() => onBook(_eventDate, guests)}
-        disabled={!_eventDate || spotsLeft <= 0}
-        className="w-full py-3 bg-[#0094CA] hover:bg-[#007ba8] text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Continue
-      </button>
+      {/* Event Status */}
+      {eventHasPassed ? (
+        <div className="p-3 bg-gray-100 text-gray-700 rounded-lg text-center font-medium">
+          Event has passed
+        </div>
+      ) : (
+        <>
+          {/* Book Button */}
+          <button
+            onClick={() => onBook(_eventDate, guests)}
+            disabled={!_eventDate || spotsLeft <= 0}
+            className="w-full py-3 bg-[#0094CA] hover:bg-[#007ba8] text-white rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Continue
+          </button>
 
-      <p className="text-center text-sm text-gray-500 mt-2">You won&apos;t be charged yet</p>
+          <p className="text-center text-sm text-gray-500 mt-2">You won&apos;t be charged yet</p>
+        </>
+      )}
 
       {/* Rare Find Badge */}
-      {spotsLeft <= 3 && spotsLeft > 0 && (
+      {!eventHasPassed && spotsLeft <= 3 && spotsLeft > 0 && (
         <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-2">
           <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
             <LuSparkles className="text-white" size={12} />
@@ -372,7 +386,7 @@ function MeetYourHost({
 /* ------------------------------------------------------------------ */
 /*  Where We'll Meet Component                                         */
 /* ------------------------------------------------------------------ */
-function WhereWellMeet({ location, isOnline }: { location: string | null; isOnline: boolean }) {
+function WhereWellMeet({ location, isOnline, meetingLink, googleMapsUrl }: { location: string | null; isOnline: boolean; meetingLink?: string | null; googleMapsUrl?: string | null }) {
   if (isOnline) {
     return (
       <div className="py-6 border-b border-gray-100">
@@ -382,6 +396,16 @@ function WhereWellMeet({ location, isOnline }: { location: string | null; isOnli
             <div className="text-4xl mb-2">🌐</div>
             <p className="font-semibold">Online Experience</p>
             <p className="text-sm text-gray-500">Join from anywhere via video call</p>
+            {meetingLink && (
+              <a
+                href={meetingLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-3 px-4 py-2 bg-[#0094CA] text-white rounded-lg text-sm font-medium hover:bg-[#007ba8] transition"
+              >
+                Join Meeting
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -400,9 +424,22 @@ function WhereWellMeet({ location, isOnline }: { location: string | null; isOnli
           </div>
         </div>
       </div>
-      <p className="text-sm text-gray-500 mt-2">
-        {location ?? "Exact location provided after booking"}
-      </p>
+      <div className="mt-2 flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {location ?? "Exact location provided after booking"}
+        </p>
+        {googleMapsUrl && (
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-[#0094CA] hover:text-[#007ba8] transition flex items-center gap-1"
+          >
+            View on Maps
+            <FiMapPin size={14} />
+          </a>
+        )}
+      </div>
     </div>
   );
 }
@@ -670,7 +707,20 @@ export default function ExperienceDetailPage({
               <div className="flex items-center gap-4 mt-2 text-sm">
                 <span className="flex items-center gap-1 text-gray-600">
                   <FiMapPin size={14} />
-                  {event.location ?? (event.is_online ? "Online" : "Location TBD")}
+                  {event.is_online ? (
+                    "Online"
+                  ) : event.google_maps_url ? (
+                    <a
+                      href={event.google_maps_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#0094CA] hover:text-[#007ba8] underline transition"
+                    >
+                      View on Maps
+                    </a>
+                  ) : (
+                    event.location ?? "Location TBD"
+                  )}
                 </span>
                 {ratingData && (
                   <span className="flex items-center gap-1">
@@ -737,7 +787,7 @@ export default function ExperienceDetailPage({
               />
 
               {/* Where We'll Meet */}
-              <WhereWellMeet location={event.location} isOnline={event.is_online} />
+              <WhereWellMeet location={event.location} isOnline={event.is_online} meetingLink={event.meeting_link} googleMapsUrl={event.google_maps_url} />
 
               {/* Guest Reviews */}
               <GuestReviews

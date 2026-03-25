@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type ReviewDTO } from "~/lib/api";
 import { FaStar } from "react-icons/fa";
 import { useUserProfile } from "~/hooks/useApi";
@@ -45,7 +45,7 @@ function sentimentLabel(score: number | null): {
   return { text: "Genuine", color: "#0094CA" };
 }
 
-function ReviewCard({ review, hostId }: { review: ReviewDTO; hostId?: string }) {
+function ReviewCard({ review, hostId, currentHostId }: { review: ReviewDTO; hostId?: string; currentHostId?: string }) {
   const [replyText, setReplyText] = useState("");
   const [showReplyInput, setShowReplyInput] = useState(false);
   const { mutate: addReply, isPending: isReplying } = useAddReplyToReview();
@@ -55,6 +55,9 @@ function ReviewCard({ review, hostId }: { review: ReviewDTO; hostId?: string }) 
   
   const reviewerName = reviewer?.name ?? review.name ?? "Anonymous Reviewer";
   const reviewerAvatar = reviewer?.avatar_url ?? "/assets/home/avatar-placeholder.png";
+
+  // Check if current user is the host of this event
+  const isCurrentUserHost = hostId && currentHostId && hostId === currentHostId;
 
   const handleReplySubmit = () => {
     if (replyText.trim()) {
@@ -102,7 +105,7 @@ function ReviewCard({ review, hostId }: { review: ReviewDTO; hostId?: string }) 
             {label.text}
           </span>
         )}
-        {hostId && !showReplyInput && !review.reply?.length && (
+        {isCurrentUserHost && !showReplyInput && !review.reply?.length && (
           <button
             onClick={() => setShowReplyInput(true)}
             className="text-xs font-semibold text-[#0094CA] hover:text-[#007aa8] transition"
@@ -121,7 +124,7 @@ function ReviewCard({ review, hostId }: { review: ReviewDTO; hostId?: string }) 
           ))}
         </div>
       )}
-      {hostId && showReplyInput && (
+      {isCurrentUserHost && showReplyInput && (
         <div className="mt-3 border-l-2 border-[#0094CA] bg-blue-50 p-3">
           <div className="flex flex-col gap-2">
             <textarea
@@ -161,11 +164,13 @@ export default function RatingsSection({
   total_reviews,
   reviews,
   hostId,
+  eventHostId,
 }: {
   avg_rating: number;
   total_reviews: number;
   reviews: ReviewDTO[];
   hostId?: string;
+  eventHostId?: string;
 }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -183,7 +188,7 @@ export default function RatingsSection({
       {/* Reviews list */}
       <div className="mt-4">
         {reviews.map((r) => (
-          <ReviewCard key={r.id} review={r} hostId={hostId} />
+          <ReviewCard key={r.id} review={r} hostId={hostId} currentHostId={eventHostId} />
         ))}
       </div>
 

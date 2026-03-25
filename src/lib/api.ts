@@ -511,6 +511,8 @@ export interface EventDTO {
   recurrence_rule: string | null;
   cancellation_policy: string | null;
   ai_suggestion: string | null;
+  meeting_link: string | null;
+  google_maps_url: string | null;
   status: string;
   published_at: string | null;
   paused_at: string | null;
@@ -636,6 +638,8 @@ export interface EventCreatePayload {
   recurrence_rule?: string;
   cancellation_policy?: string;
   ai_suggestion?: string;
+  meeting_link?: string;
+  google_maps_url?: string;
 }
 
 export interface EventUpdatePayload {
@@ -661,6 +665,8 @@ export interface EventUpdatePayload {
   is_recurring?: boolean;
   recurrence_rule?: string;
   cancellation_policy?: string;
+  meeting_link?: string;
+  google_maps_url?: string;
 }
 
 /** POST /events/ — create a new event */

@@ -22,6 +22,8 @@ interface FormData {
   galleryPreviews: string[];
   isOnline: boolean;
   location: string;
+  meetingLink: string;
+  googleMapsUrl: string;
   durationMinutes: number;
   minGroupSize: number;
   maxGroupSize: number;
@@ -315,6 +317,8 @@ export default function CreateExperiencePage() {
     galleryPreviews: [],
     isOnline: false,
     location: "",
+    meetingLink: "",
+    googleMapsUrl: "",
     durationMinutes: 60,
     minGroupSize: 1,
     maxGroupSize: 10,
@@ -480,6 +484,8 @@ export default function CreateExperiencePage() {
         end_time: endDateTime.toISOString(),
         is_online: form.isOnline,
         location: form.isOnline ? undefined : form.location || undefined,
+        meeting_link: form.isOnline ? form.meetingLink || undefined : undefined,
+        google_maps_url: !form.isOnline ? form.googleMapsUrl || undefined : undefined,
         duration_minutes: form.durationMinutes,
         capacity: form.maxGroupSize,
         min_group_size: form.minGroupSize,
@@ -679,6 +685,21 @@ export default function CreateExperiencePage() {
                   </div>
                 </div>
 
+                {/* Meeting Link (if online) */}
+                {form.isOnline && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Meeting Link</label>
+                    <input
+                      type="url"
+                      value={form.meetingLink}
+                      onChange={(e) => updateForm("meetingLink", e.target.value)}
+                      placeholder="e.g., https://zoom.us/j/123456789"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                    <p className="text-xs text-gray-500">Paste your Zoom, Google Meet, or other video conference link</p>
+                  </div>
+                )}
+
                 {/* Location (if in-person) */}
                 {!form.isOnline && (
                   <div className="space-y-2 mb-4">
@@ -690,6 +711,21 @@ export default function CreateExperiencePage() {
                       placeholder="Enter the meeting location"
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
                     />
+                  </div>
+                )}
+
+                {/* Google Maps URL (if in-person) */}
+                {!form.isOnline && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Google Maps Link</label>
+                    <input
+                      type="url"
+                      value={form.googleMapsUrl}
+                      onChange={(e) => updateForm("googleMapsUrl", e.target.value)}
+                      placeholder="e.g., https://maps.google.com/..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                    <p className="text-xs text-gray-500">Share a Google Maps link so guests can view the location</p>
                   </div>
                 )}
 

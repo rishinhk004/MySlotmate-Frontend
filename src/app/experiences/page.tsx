@@ -70,6 +70,13 @@ export default function ExperiencesPage() {
     
     let filtered = events;
     
+    // Filter out past events
+    const now = new Date();
+    filtered = filtered.filter((event) => {
+      const eventDate = new Date(event.time);
+      return eventDate > now;
+    });
+    
     // Filter by location
     if (filterByLocation && location) {
       const cityLower = location.city.toLowerCase();

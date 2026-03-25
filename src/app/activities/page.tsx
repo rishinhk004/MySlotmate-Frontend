@@ -164,7 +164,31 @@ export default function ActivitiesPage() {
 
                         <div>
                           <p className="text-xs text-gray-500">Location</p>
-                          <p className="text-sm font-medium">{event.location ?? "Online"}</p>
+                          {event.is_online ? (
+                            event.meeting_link ? (
+                              <a
+                                href={event.meeting_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-[#0094CA] hover:text-[#007ba8] underline transition"
+                              >
+                                Join Meeting
+                              </a>
+                            ) : (
+                              <p className="text-sm font-medium">Online</p>
+                            )
+                          ) : event.google_maps_url ? (
+                            <a
+                              href={event.google_maps_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-[#0094CA] hover:text-[#007ba8] underline transition"
+                            >
+                              View on Maps
+                            </a>
+                          ) : (
+                            <p className="text-sm font-medium">{event.location ?? "Location TBD"}</p>
+                          )}
                         </div>
                       </div>
                     </div>

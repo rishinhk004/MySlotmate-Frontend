@@ -55,12 +55,20 @@ const Trending = () => {
   // Filter events by distance (nearest first)
   const filteredEvents = useMemo(() => {
     if (!events) return [];
+    
+    // Filter out past events
+    const now = new Date();
+    const futureEvents = events.filter((event) => {
+      const eventDate = new Date(event.time);
+      return eventDate > now;
+    });
+    
     if (!mounted || !location) {
-      return events.slice(0, 8);
+      return futureEvents.slice(0, 8);
     }
     
     // Calculate distance for each event
-    const eventsWithDistance = events.map((event) => {
+    const eventsWithDistance = futureEvents.map((event) => {
       let distance = Infinity; // Default: very far away
       
       // If event has coordinates, calculate distance
@@ -99,7 +107,7 @@ const Trending = () => {
         <h1 className="text-xl font-semibold text-gray-900">
           Trending Now
         </h1>
-        <Link href="/activities" className="text-[#0094CA] text-sm flex items-center gap-2 hover:opacity-80">
+        <Link href="/experiences" className="text-[#0094CA] text-sm flex items-center gap-2 hover:opacity-80">
           <span>see more</span>
           <span className="bg-[#0094CA] w-8 h-8 flex items-center justify-center rounded-full">
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

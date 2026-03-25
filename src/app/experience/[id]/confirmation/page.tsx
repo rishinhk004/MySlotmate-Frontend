@@ -127,19 +127,19 @@ function ConfirmationContent({ eventId }: { eventId: string }) {
         {/* Action Buttons */}
         <div className="mt-8 flex gap-4">
           <button
-            onClick={() => router.push("/bookings")}
+            onClick={() => router.push("/activities")}
             className="flex-1 py-3 bg-[#0094CA] hover:bg-[#007ba8] text-white rounded-lg font-semibold transition flex items-center justify-center gap-2"
           >
             <FiCalendar size={18} />
             Go to My Bookings
           </button>
-          <button
+          {/* <button
             onClick={() => router.push("/calendar")}
             className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition flex items-center justify-center gap-2"
           >
             <FiCalendar size={18} />
             View Calendar
-          </button>
+          </button> */}
         </div>
 
         {/* Back to Browse */}

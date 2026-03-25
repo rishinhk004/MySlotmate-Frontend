@@ -1,6 +1,8 @@
 "use client";
 
 import { use, useMemo } from "react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "~/utils/firebase";
 import {
   ProfileHeader,
   PhotoGallery,
@@ -16,6 +18,7 @@ import {
   usePublicHostProfile,
   useEventsByHost,
   useReviewsByEvent,
+  useMyHost,
 } from "~/hooks/useApi";
 
 export const runtime = "edge";
@@ -26,9 +29,11 @@ export default function HostProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id: _hostId } = use(params);
+  const [user] = useAuthState(auth);
 
   const { data: host, isLoading: hostLoading } = usePublicHostProfile(_hostId);
   const { data: events } = useEventsByHost(_hostId);
+  const { data: currentUserHost } = useMyHost(user?.uid ?? null);
 
   // Pick the first event's reviews as representative reviews for the host
   const firstEventId = events?.[0]?.id ?? null;
@@ -130,7 +135,8 @@ export default function HostProfilePage({
               avg_rating={host.avg_rating ?? 0}
               total_reviews={host.total_reviews}
               reviews={reviews}
-              hostId={_hostId}
+              hostId={currentUserHost?.id}
+              eventHostId={_hostId}
             />
           </div>
         </div>
