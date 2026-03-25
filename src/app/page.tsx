@@ -171,6 +171,7 @@ const FilterBar = () => {
 export default function HomePage() {
   const [mode, setMode] = useState<string>("All");
   const [hostId, setHostId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -178,6 +179,7 @@ export default function HomePage() {
     if (id) {
       setHostId(id);
     }
+    setMounted(true);
   }, []);
 
   useLayoutEffect(() => {
@@ -223,7 +225,7 @@ export default function HomePage() {
 
       <div className="scroll-fade w-full flex flex-col items-center site-x">
         <div className="flex gap-3 flex-wrap justify-center w-full">
-          <FilterBar />
+          {mounted && <FilterBar />}
         </div>
       </div>
 
