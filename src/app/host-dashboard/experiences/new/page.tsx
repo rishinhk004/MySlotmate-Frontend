@@ -844,7 +844,7 @@ export default function CreateExperiencePage() {
                           className="w-full pl-8 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
                         />
                       </div>
-                      <p className="text-xs text-gray-500">Platform fee: 15% • You&apos;ll earn: ₹{((form.priceCents / 100) * 0.85).toFixed(0)} per booking</p>
+                      <p className="text-xs text-gray-500">Platform fee: 30% • You&apos;ll earn: ₹{((form.priceCents / 100) * 0.70).toFixed(0)} per booking</p>
                     </div>
                   )}
                 </div>

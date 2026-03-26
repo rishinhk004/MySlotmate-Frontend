@@ -134,7 +134,7 @@ export default function HostEarningsPage() {
 
   const availableBalance = earnings?.total_earnings_cents ?? 0;
 
-  const platformFeePercent = 15;
+  const platformFeePercent = 30;
   const hostPercent = 100 - platformFeePercent;
   const avgBookingValue = 15000;
   const serviceFee = Math.round(avgBookingValue * (platformFeePercent / 100));
