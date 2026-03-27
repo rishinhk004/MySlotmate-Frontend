@@ -37,24 +37,26 @@ export default function GoogleLogin({ open, onClose }: GoogleLoginProps) {
           if (profileRes.ok) {
             const response = (await profileRes.json()) as { data?: { id?: string } };
             userId = response.data?.id ?? null;
-            if (userId) {
-              // Existing user — save ID and proceed
-              localStorage.setItem("msm_user_id", userId);
-              toast.success("Welcome back!");
-              onClose();
-              return;
-            }
           }
         } catch (fetchErr) {
           console.error("Error fetching user by Firebase UID:", fetchErr);
         }
 
-        // User doesn't exist yet — redirect to signup
-        onClose();
-        router.push("/signup");
-        return;
+        // If user exists in database, save ID and welcome back
+        if (userId) {
+          localStorage.setItem("msm_user_id", userId);
+          toast.success("Welcome back!");
+          onClose();
+          return;
+        } else {
+          // User doesn't exist yet — redirect to signup
+          onClose();
+          router.push("/signup");
+          return;
+        }
       }
 
+      // User already has ID in localStorage, close modal
       onClose();
     } catch (err) {
       console.error("Google sign-in error:", err);

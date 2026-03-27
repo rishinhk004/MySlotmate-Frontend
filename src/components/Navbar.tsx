@@ -257,7 +257,7 @@ export default function Navbar() {
                       </div>
                     )}
 
-                    <div className="flex-1 overflow-y-auto px-5">
+                    <div className="flex-1 overflow-y-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {/* Host Dashboard card - Approved hosts */}
                       {hostStatus === "approved" && (
                         <div className="mb-4 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
@@ -442,7 +442,7 @@ export default function Navbar() {
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white site-x pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto">
+          <div className="md:hidden border-t border-gray-100 bg-white site-x pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => { setLocationOpen(true); setMobileOpen(false); }}
               className="flex items-center gap-2 py-3 w-full rounded-lg hover:bg-gray-50 transition"
