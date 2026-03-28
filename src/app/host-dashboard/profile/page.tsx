@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "~/utils/firebase";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import {
   FiX,
   FiEdit2,
@@ -226,16 +227,7 @@ export default function HostProfileEditPage() {
         </div>
       ) : (
       <main className="mx-auto max-w-6xl site-x py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/host-dashboard" className="hover:text-gray-700">
-            Dashboard
-          </Link>
-          <span>›</span>
-          <span className="font-medium text-gray-900">
-            Profile &amp; Verification
-          </span>
-        </div>
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard", href: "/host-dashboard" }, { label: "Profile" }]} className="mb-6" />
 
         {/* Header row */}
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

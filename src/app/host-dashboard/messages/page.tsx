@@ -11,6 +11,7 @@ import {
   useSendMessage,
 } from "~/hooks/useApi";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import { createSocket } from "~/lib/socket";
 import type { EventDTO, InboxMessageDTO } from "~/lib/api";
 import { FiSearch, FiSend, FiVolume2 } from "react-icons/fi";
@@ -161,6 +162,8 @@ export default function HostMessagesPage() {
       <HostNavbar />
 
       <main className="mx-auto max-w-6xl site-x py-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard", href: "/host-dashboard" }, { label: "Messages" }]} className="mb-6" />
+        
         <div className="mb-5">
           <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
           <p className="mt-1 text-sm text-gray-500">

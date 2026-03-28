@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import { useMyHost, useCreateEvent, useUploadFiles, usePublishEvent } from "~/hooks/useApi";
 import { FiArrowLeft, FiArrowRight, FiUpload, FiX, FiCheck, FiMapPin, FiClock, FiUsers, FiCalendar, FiDollarSign, FiShare2, FiExternalLink } from "react-icons/fi";
 import { toast } from "sonner";
@@ -578,6 +579,16 @@ export default function CreateExperiencePage() {
 
       <main className="min-h-screen bg-gray-50 pb-24">
         <div className="max-w-4xl mx-auto site-x py-8">
+          <Breadcrumb 
+            items={[
+              { label: "Home", href: "/" }, 
+              { label: "Dashboard", href: "/host-dashboard" },
+              { label: "Experiences", href: "/host-dashboard/experiences" },
+              { label: "New" }
+            ]} 
+            className="mb-6" 
+          />
+          
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <button

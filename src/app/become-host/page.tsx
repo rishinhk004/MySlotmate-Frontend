@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "~/utils/firebase";
-import { Navbar } from "~/components";
+import { Navbar, Breadcrumb } from \"~/components\";
 import { HostApplicationSubmittedModal } from "~/components/become-host";
 import { Home } from "~/components";
 import { FiArrowRight, FiUploadCloud } from "react-icons/fi";
@@ -376,6 +376,8 @@ export default function BecomeHostPage() {
       <Navbar />
 
       <main className="mx-auto min-h-screen max-w-5xl site-x py-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Become a Host" }]} className="mb-6" />
+        
         {/* Header row */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

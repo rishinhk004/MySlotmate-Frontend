@@ -4,6 +4,7 @@ import { useEffect, useState, use, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "~/components/Navbar";
+import Breadcrumb from "~/components/Breadcrumb";
 import {
   useEvent,
   usePublicHostProfile,
@@ -517,6 +518,16 @@ export default function BookingReviewPage({
   return (
     <>
       <Navbar />
+      <div className="max-w-xl mx-auto site-x py-6">
+        <Breadcrumb 
+          items={[
+            { label: "Home", href: "/" }, 
+            { label: "Experiences", href: "/experiences" },
+            { label: "Book Experience" }
+          ]} 
+          className="mb-6" 
+        />
+      </div>
       <Suspense
         fallback={
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">

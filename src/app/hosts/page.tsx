@@ -5,6 +5,8 @@ import { useListHosts } from "~/hooks/useApi";
 import { getSavedLocation, type CityLocation } from "~/components/LocationModal";
 import { LuLoader2 } from "react-icons/lu";
 import * as components from "~/components";
+import Breadcrumb from "~/components/Breadcrumb";
+
 
 interface HostCardProps {
   id: string;
@@ -51,30 +53,37 @@ const HostCard = ({ id, name, imageUrl, rating, isVerified }: HostCardProps) => 
 export default function HostsPage() {
   const [location, setLocation] = useState<CityLocation | null>(null);
   const [filterByLocation, setFilterByLocation] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const { data: hosts, isLoading } = useListHosts();
 
   useEffect(() => {
     setLocation(getSavedLocation());
+    setUserId(localStorage.getItem("msm_host_id"));
   }, []);
 
   const filteredHosts = useMemo(() => {
     if (!hosts) return [];
-    if (!filterByLocation || !location) return hosts;
+    
+    // Filter out current user's profile
+    const filtered = hosts.filter(host => host.id !== userId);
+    
+    if (!filterByLocation || !location) return filtered;
 
     const cityLower = location.city.toLowerCase();
-    const locationFiltered = hosts.filter((host) => {
+    const locationFiltered = filtered.filter((host) => {
       const hostCity = host.city?.toLowerCase() ?? "";
       return hostCity.includes(cityLower) || cityLower.includes(hostCity);
     });
 
-    return locationFiltered.length > 0 ? locationFiltered : hosts;
-  }, [hosts, location, filterByLocation]);
+    return locationFiltered.length > 0 ? locationFiltered : filtered;
+  }, [hosts, location, filterByLocation, userId]);
 
   return (
     <main className="min-h-screen bg-white">
       <components.Navbar />
-      
+
       <div className="max-w-6xl mx-auto px-6 py-8 pt-24">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Hosts" }]} className="mb-6" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <h1 className="text-2xl font-semibold text-gray-900">
             Interesting People Near You

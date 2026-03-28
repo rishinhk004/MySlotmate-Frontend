@@ -15,6 +15,7 @@ import {
 } from "date-fns";
 import { FiChevronLeft, FiChevronRight, FiRefreshCw, FiPlus, FiMapPin, FiClock, FiMessageCircle } from "react-icons/fi";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import { useCalendarEvents, useEventAttendees, useMyHost } from "~/hooks/useApi";
 import type { EventDTO } from "~/lib/api";
 
@@ -87,6 +88,8 @@ export default function HostCalendarPage() {
       <HostNavbar />
 
       <main className="mx-auto max-w-7xl site-x py-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard", href: "/host-dashboard" }, { label: "Calendar" }]} className="mb-6" />
+        
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>

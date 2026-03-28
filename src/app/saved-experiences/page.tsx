@@ -8,6 +8,7 @@ import * as components from "~/components";
 import { FiBookmark, FiTrash2, FiMapPin, FiDollarSign } from "react-icons/fi";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "~/hooks/useApi";
+import Breadcrumb from "~/components/Breadcrumb";
 
 interface SavedExperienceWithEvent {
   saved: {
@@ -82,6 +83,7 @@ export default function SavedExperiencesPage() {
       <components.Navbar />
 
       <div className="max-w-7xl mx-auto site-x py-12">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Saved Experiences" }]} className="mb-6" />
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Saved Experiences</h1>

@@ -170,7 +170,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${geist.variable} overflow-x-hidden max-w-screen`}>
+    <html lang="en" className={`${geist.variable} overflow-x-hidden max-w-screen`} suppressHydrationWarning>
       <head>
         {/* JSON-LD Schema Markup */}
         <script

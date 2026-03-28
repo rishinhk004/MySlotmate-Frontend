@@ -11,7 +11,7 @@ import {
   RatingsSection,
   ExperiencesList,
 } from "~/components/host";
-import { Navbar } from "~/components";
+import { Navbar, Breadcrumb } from "~/components";
 import { FiChevronRight } from "react-icons/fi";
 import Link from "next/link";
 import {
@@ -88,18 +88,14 @@ export default function HostProfilePage({
       <Navbar />
 
       <div className="mx-auto max-w-5xl site-x py-6">
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex items-center gap-1 text-sm text-gray-400">
-          <Link href="/" className="hover:text-[#0094CA]">
-            Home
-          </Link>
-          <FiChevronRight className="h-3 w-3" />
-          <Link href="/" className="hover:text-[#0094CA]">
-            Interesting people near you
-          </Link>
-          <FiChevronRight className="h-3 w-3" />
-          <span className="font-medium text-gray-700">{fullName}</span>
-        </nav>
+        <Breadcrumb 
+          items={[
+            { label: "Home", href: "/" }, 
+            { label: "Hosts", href: "/hosts" },
+            { label: fullName }
+          ]} 
+          className="mb-6" 
+        />
 
         {/* Profile Header */}
         <ProfileHeader host={host} />

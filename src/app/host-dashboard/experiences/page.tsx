@@ -4,6 +4,7 @@ import { useEventsByHost, useMyHost, useResumeEvent } from "~/hooks/useApi";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import { FiSearch, FiStar, FiCalendar, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
 import { LuBookOpen } from "react-icons/lu";
 import { toast } from "sonner";
@@ -389,6 +390,8 @@ export default function ExperiencesPage() {
       <HostNavbar />
 
       <main className="mx-auto max-w-7xl site-x py-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard", href: "/host-dashboard" }, { label: "Experiences" }]} className="mb-6" />
+        
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>

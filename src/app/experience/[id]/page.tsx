@@ -697,7 +697,7 @@ export default function ExperienceDetailPage({
             <span className="mx-2 text-gray-400">/</span>
             <span className="text-gray-500">Experiences</span>
             <span className="mx-2 text-gray-400">/</span>
-            <span className="text-gray-900">{event.mood ?? "Experience"}</span>
+            <span className="text-gray-900">{event.title ?? "Experience"}</span>
           </nav>
 
           {/* Title and Actions */}

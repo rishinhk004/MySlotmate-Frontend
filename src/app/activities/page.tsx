@@ -7,6 +7,7 @@ import { type BookingDTO, type EventDTO } from "~/lib/api";
 import * as components from "~/components";
 import { InboxSidebar, ReviewModal } from "~/components/activities";
 import { FiCalendar, FiUsers, FiDollarSign, FiXCircle, FiCheck, FiMessageCircle, FiStar } from "react-icons/fi";
+import Breadcrumb from "~/components/Breadcrumb";
 
 interface BookingWithEvent {
   booking: BookingDTO;
@@ -88,6 +89,7 @@ export default function ActivitiesPage() {
       <components.Navbar />
 
       <div className="max-w-7xl mx-auto site-x py-12">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "My Bookings" }]} className="mb-6" />
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>

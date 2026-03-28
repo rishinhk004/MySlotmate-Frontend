@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "~/utils/firebase";
-import { Navbar } from "~/components";
+import { Navbar, Breadcrumb } from "~/components";
 import Link from "next/link";
 import { FiArrowLeft, FiDownload, FiCheckCircle, FiXCircle, FiAlertCircle, FiCreditCard, FiClock, FiCheck, FiTrash2, FiX } from "react-icons/fi";
 import { LuLoader2, LuWallet, LuBuilding2 } from "react-icons/lu";
@@ -324,6 +324,8 @@ export default function AdminPage() {
       <Navbar />
       <main className="min-h-screen bg-gray-50 py-10">
         <div className="mx-auto max-w-7xl site-x">
+          <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Admin" }]} className="mb-6" />
+          
           {/* Global feedback banners */}
           {actionSuccess && (
             <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">

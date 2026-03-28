@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import { useEarnings, usePayoutHistory, usePayoutMethods } from "~/hooks/useApi";
 import { format } from "date-fns";
 import {
@@ -260,6 +261,7 @@ export default function HostEarningsPage() {
       <HostNavbar />
 
       <main className="mx-auto max-w-6xl site-x py-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard", href: "/host-dashboard" }, { label: "Earnings" }]} className="mb-6" />
 
         {/* Header */}
         <div className="mb-6">

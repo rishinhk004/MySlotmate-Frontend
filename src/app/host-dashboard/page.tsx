@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "~/utils/firebase";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import {
   FiCalendar,
   FiStar,
@@ -169,6 +170,8 @@ export default function HostDashboardPage() {
       <HostNavbar />
 
       <main className="mx-auto max-w-7xl site-x py-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard" }]} className="mb-6" />
+        
         {/* Loading state */}
         {loading && (
           <div className="flex min-h-[40vh] items-center justify-center">

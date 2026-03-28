@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HostNavbar } from "~/components/host-dashboard";
+import Breadcrumb from "~/components/Breadcrumb";
 import { useMyHost, useEvent, useUpdateEvent, useUploadFiles } from "~/hooks/useApi";
 import { FiArrowLeft, FiX, FiUpload, FiTrash2, FiCheck } from "react-icons/fi";
 import type { BookingDTO } from "~/lib/api";
@@ -460,6 +461,16 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
 
       <main className="min-h-screen bg-gray-50 pb-24">
         <div className="max-w-4xl mx-auto site-x py-8">
+          <Breadcrumb 
+            items={[
+              { label: "Home", href: "/" }, 
+              { label: "Dashboard", href: "/host-dashboard" },
+              { label: "Experiences", href: "/host-dashboard/experiences" },
+              { label: "Edit" }
+            ]} 
+            className="mb-6" 
+          />
+          
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => router.push("/host-dashboard/experiences")}
