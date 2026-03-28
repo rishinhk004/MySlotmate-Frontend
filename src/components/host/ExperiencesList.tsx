@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type EventDTO } from "~/lib/api";
 import { HiOutlineCalendar } from "react-icons/hi";
 
@@ -77,9 +78,9 @@ function ExperienceCard({ event }: { event: EventDTO }) {
         <p className="line-clamp-2 text-sm text-gray-500">
           {event.description ?? event.hook_line ?? ""}
         </p>
-        <button className="mt-auto w-full rounded-full bg-[#0094CA] py-2.5 text-sm font-semibold text-white transition hover:bg-[#007aa8]">
+        <Link href={`/experience/${event.id}`} className="mt-auto w-full rounded-full bg-[#0094CA] py-2.5 text-sm font-semibold text-white transition hover:bg-[#007aa8] text-center">
           Book Experience
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -96,11 +97,8 @@ export default function ExperiencesList({
         <h2 className="text-xl font-bold text-gray-900">
           Live & Upcoming Experiences
         </h2>
-        <button className="text-sm font-semibold text-[#0094CA] hover:underline">
-          View All
-        </button>
       </div>
-      <div className="mt-4 flex flex-col gap-4 sm:flex-row">
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row overflow-x-scroll [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {events.map((evt) => (
           <ExperienceCard key={evt.id} event={evt} />
         ))}

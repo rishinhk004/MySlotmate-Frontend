@@ -207,6 +207,7 @@ export default function HomePage() {
   const [hostId, setHostId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const filterBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = localStorage.getItem("msm_host_id");
@@ -251,24 +252,24 @@ export default function HomePage() {
       */}
 
       <div className="scroll-fade w-full flex flex-col items-center">
-        <components.Home.Hero />
+        <components.Home.Hero filterBarRef={filterBarRef} />
       </div>
 
-      <div className="scroll-fade w-full flex flex-col items-center">
+      <div className="scroll-fade w-full flex flex-col items-center mb-16 mt-8">
         <components.Home.people currentHostId={hostId} />
       </div>
 
-      <div className="scroll-fade w-full flex flex-col items-center site-x">
+      <div className="scroll-fade w-full flex flex-col items-center site-x" ref={filterBarRef}>
         <div className="flex gap-3 flex-wrap justify-center w-full">
           {mounted && <FilterBar />}
         </div>
       </div>
 
-      <div className="scroll-fade w-full flex flex-col items-center">
+      <div className="scroll-fade w-full flex flex-col items-center mb-16">
         <components.Home.Trending />
       </div>
 
-      <div className="scroll-fade w-[100%] flex flex-col items-center lg:px-[8rem]">
+      <div className="scroll-fade w-[100%] flex flex-col items-center lg:px-[8rem] mb-16">
         <components.Home.Banner />
       </div>
 

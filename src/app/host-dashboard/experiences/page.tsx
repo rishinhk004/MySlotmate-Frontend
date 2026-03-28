@@ -4,8 +4,10 @@ import { useEventsByHost, useMyHost, useResumeEvent } from "~/hooks/useApi";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { HostNavbar } from "~/components/host-dashboard";
-import { FiSearch, FiStar, FiCalendar, FiMoreVertical, FiSettings } from "react-icons/fi";
+import { FiSearch, FiStar, FiCalendar, FiEdit2, FiTrash2, FiEye } from "react-icons/fi";
 import { LuBookOpen } from "react-icons/lu";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 /* ------------------------------------------------------------------ */
 /*  Helper: relative time formatting                                   */
@@ -78,9 +80,11 @@ interface ExperienceCardProps {
   isResuming: boolean;
 }
 
-function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: ExperienceCardProps) {
+function ExperienceCard({ event, hostId: _hostId, onResume: _onResume, isResuming: _isResuming }: ExperienceCardProps) {
   const router = useRouter();
-  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
 
   const nextDate = event.status === "paused" ? null : event.time;
   const isPaused = event.status === "paused";
@@ -93,16 +97,39 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
       ? `CREATED ${formatRelativeTime(event.created_at)}`
       : `LAST EDITED ${formatRelativeTime(event.updated_at)}`;
 
-  const actionButtonText = isDraft ? "Resume" : isPaused ? "Settings" : "Manage";
-  const ActionIcon = isPaused ? FiSettings : null;
+  const handleEdit = () => {
+    router.push(`/host-dashboard/experiences/${event.id}`);
+  };
 
-  const handleAction = () => {
-    if (isDraft) {
-      onResume(event.id);
-    } else if (isPaused) {
-      return null;
-    } else {
-      return null;
+  const handleViewBookings = () => {
+    router.push(`/host-dashboard/experiences/${event.id}?tab=bookings`);
+  };
+
+  const handleDelete = async () => {
+    if (!_hostId) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/events/${event.id}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ host_id: _hostId }),
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete event");
+      }
+      
+      toast.success("Experience deleted successfully!");
+      await queryClient.invalidateQueries({ queryKey: ["events"] });
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete event");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -123,37 +150,8 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
 
       {/* Content */}
       <div className="p-4 flex-1 flex flex-col">
-        {/* Title row with menu */}
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-base font-semibold text-gray-900 line-clamp-1">{event.title}</h3>
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1 hover:bg-gray-100 rounded-full transition"
-            >
-              <FiMoreVertical className="h-4 w-4 text-gray-400" />
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                <button
-                  onClick={() => {
-                    router.push(`/host-dashboard/experiences/${event.id}`);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => setShowMenu(false)}
-                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-50"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Title row */}
+        <h3 className="text-base font-semibold text-gray-900 line-clamp-1">{event.title}</h3>
 
         {/* Info rows */}
         <div className="mt-3 space-y-2">
@@ -186,19 +184,85 @@ function ExperienceCard({ event, hostId: _hostId, onResume, isResuming }: Experi
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-100">
+        {/* Action buttons and footer */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-2 mb-2">
+            {/* Edit button */}
+            <div className="group relative">
+              <button
+                onClick={handleEdit}
+                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-[#0094CA]"
+                title="Edit"
+              >
+                <FiEdit2 className="h-4 w-4" />
+              </button>
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
+                Edit
+              </span>
+            </div>
+
+            {/* View bookings button */}
+            <div className="group relative">
+              <button
+                onClick={handleViewBookings}
+                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-[#0094CA]"
+                title="View Bookings"
+              >
+                <FiEye className="h-4 w-4" />
+              </button>
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
+                View Bookings
+              </span>
+            </div>
+
+            {/* Delete button */}
+            <div className="group relative ml-auto">
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 hover:bg-red-50 rounded-lg transition text-gray-400 hover:text-red-600"
+                title="Delete"
+              >
+                <FiTrash2 className="h-4 w-4" />
+              </button>
+              <span className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
+                Delete
+              </span>
+            </div>
+          </div>
           <span className="text-[10px] font-medium text-gray-400 tracking-wide">{footerText}</span>
-          <button
-            onClick={handleAction}
-            disabled={isResuming}
-            className="flex items-center gap-1 text-sm font-medium text-[#0094CA] hover:underline disabled:opacity-50"
-          >
-            {actionButtonText}
-            {ActionIcon ? <ActionIcon className="h-3.5 w-3.5" /> : <span>→</span>}
-          </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <FiTrash2 className="text-red-600" size={24} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Delete {event.title}?</h2>
+            <p className="text-gray-500 mb-6">
+              This will permanently delete your experience. All confirmed bookings will be refunded.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-semibold transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

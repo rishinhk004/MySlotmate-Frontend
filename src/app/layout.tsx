@@ -95,8 +95,7 @@ export const metadata: Metadata = {
   /* Icons */
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/assets/home/logo.png", sizes: "any" }
     ],
     apple: "/apple-touch-icon.png",
     other: [
@@ -157,9 +156,7 @@ export default function RootLayout({
       url: appUrl,
       logo: "/logo.png",
       sameAs: [
-        "https://twitter.com/MySlotMate",
-        "https://facebook.com/MySlotMate",
-        "https://instagram.com/MySlotMate",
+        "https://www.instagram.com/myslotmate/",
       ],
     },
     potentialAction: {
@@ -173,7 +170,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${geist.variable}`}>
+    <html lang="en" className={`${geist.variable} overflow-x-hidden max-w-screen`}>
       <head>
         {/* JSON-LD Schema Markup */}
         <script
@@ -196,7 +193,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="MySlotMate" />
       </head>
-      <body>
+      <body className="overflow-x-hidden max-w-screen">
         <Providers>{children}</Providers>
         <Toaster position="top-right" richColors closeButton />
       </body>

@@ -50,6 +50,9 @@ const CANCELLATION_POLICIES = [
   { value: "strict", label: "Strict", description: "50% refund up to 1 week before" },
 ];
 
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 /* ------------------------------------------------------------------ */
 /*  Step Indicator Component                                           */
 /* ------------------------------------------------------------------ */
@@ -99,7 +102,32 @@ function ImageUpload({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    if (files.length) onUpload(files);
+    if (files.length === 0) return;
+
+    // Validate file sizes
+    const oversizedFiles: string[] = [];
+    const validFiles: File[] = [];
+
+    files.forEach((file) => {
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        oversizedFiles.push(`${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    // Show warning if any files exceed limit
+    if (oversizedFiles.length > 0) {
+      toast.error(
+        `File${oversizedFiles.length > 1 ? 's' : ''} too large:\n${oversizedFiles.join(', ')}\n\nMax size is ${MAX_FILE_SIZE_MB}MB per file.`
+      );
+    }
+
+    // Only upload valid files
+    if (validFiles.length > 0) {
+      onUpload(validFiles);
+    }
+
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -265,7 +293,7 @@ function SuccessModal({
         <div className="flex flex-col gap-3">
           <button
             onClick={() => {
-              const url = `${window.location.origin}/experiences/${experienceId}`;
+              const url = `${window.location.origin}/experience/${experienceId}`;
               void navigator.clipboard.writeText(url);
               toast.success("Link copied to clipboard!");
             }}
@@ -275,7 +303,7 @@ function SuccessModal({
             Share Experience
           </button>
           <button
-            onClick={() => router.push(`/experiences/${experienceId}`)}
+            onClick={() => router.push(`/experience/${experienceId}`)}
             className="flex items-center justify-center gap-2 w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition"
           >
             <FiExternalLink size={18} />
@@ -792,7 +820,7 @@ export default function CreateExperiencePage() {
           {currentStep === 2 && (
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Form Section */}
-              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-6">
+              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-sm space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div className="border-b border-gray-100 pb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Schedule & Pricing</h2>
                   <p className="text-sm text-gray-500">Set when and how much</p>
