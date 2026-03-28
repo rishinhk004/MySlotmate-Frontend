@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import HeroCard from "./HeroCard";
 import { useListPublicEvents } from "~/hooks/useApi";
+import { type EventDTO } from "~/lib/api";
 
 interface HeroProps {
     filterBarRef?: React.RefObject<HTMLDivElement | null>;
@@ -21,7 +22,7 @@ const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
     }, []);
     
     // Get 3 random future events
-    const randomFutureEvents = useMemo(() => {
+    const randomFutureEvents: EventDTO[] = useMemo<EventDTO[]>(() => {
         if (!events) return [];
         
         const now = new Date();
@@ -120,36 +121,36 @@ const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
                             WebkitMaskImage: "radial-gradient(circle at center, rgba(0, 0, 0, 0.95) 14%, rgba(0, 0, 0, 0.55) 52%, rgba(0, 0, 0, 0.2) 72%, rgba(0, 0, 0, 0) 100%)",
                         }}
                     />
-                    {randomFutureEvents.length > 0 ? (
+                    {randomFutureEvents && randomFutureEvents.length > 0 ? (
                         <>
                             <div className="relative z-10 origin-bottom-right transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[1rem] lg:group-hover:rotate-[7deg]">
                                 <HeroCard 
-                                    id={randomFutureEvents[0].id}
-                                    photo={randomFutureEvents[0].cover_image_url || "/assets/home/heropic1.png"} 
-                                    type={randomFutureEvents[0].mood || "Adventure"} 
-                                    title={randomFutureEvents[0].title} 
-                                    description={randomFutureEvents[0].hook_line || "..."} 
-                                    duration={`${randomFutureEvents[0].duration_minutes || 0} mins`}
+                                    id={randomFutureEvents[0]!.id}
+                                    photo={randomFutureEvents[0]!.cover_image_url ?? "/assets/home/heropic1.png"} 
+                                    type={randomFutureEvents[0]!.mood ?? "Adventure"} 
+                                    title={randomFutureEvents[0]!.title} 
+                                    description={randomFutureEvents[0]!.hook_line ?? "..."} 
+                                    duration={`${randomFutureEvents[0]!.duration_minutes ?? 0} mins`}
                                 />
                             </div>
                             <div className="relative z-10 origin-center transition-transform duration-500 ease-out lg:group-hover:-rotate-[7deg]">
                                 <HeroCard 
                                     id={randomFutureEvents[1]?.id}
-                                    photo={randomFutureEvents[1]?.cover_image_url || "/assets/home/heropic2.png"} 
-                                    type={randomFutureEvents[1]?.mood || "Adventure"} 
-                                    title={randomFutureEvents[1]?.title || "Coming Soon"} 
-                                    description={randomFutureEvents[1]?.hook_line || "..."} 
-                                    duration={`${randomFutureEvents[1]?.duration_minutes || 0} mins`}
+                                    photo={randomFutureEvents[1]?.cover_image_url ?? "/assets/home/heropic2.png"} 
+                                    type={randomFutureEvents[1]?.mood ?? "Adventure"} 
+                                    title={randomFutureEvents[1]?.title ?? "Coming Soon"} 
+                                    description={randomFutureEvents[1]?.hook_line ?? "..."} 
+                                    duration={`${randomFutureEvents[1]?.duration_minutes ?? 0} mins`}
                                 />
                             </div>
                             <div className="relative z-10 origin-top-left transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[-1rem] lg:group-hover:rotate-[7deg]">
                                 <HeroCard 
                                     id={randomFutureEvents[2]?.id}
-                                    photo={randomFutureEvents[2]?.cover_image_url || "/assets/home/heropic3.png"} 
-                                    type={randomFutureEvents[2]?.mood || "Chill"} 
-                                    title={randomFutureEvents[2]?.title || "Coming Soon"} 
-                                    description={randomFutureEvents[2]?.hook_line || "..."} 
-                                    duration={`${randomFutureEvents[2]?.duration_minutes || 0} mins`}
+                                    photo={randomFutureEvents[2]?.cover_image_url ?? "/assets/home/heropic3.png"} 
+                                    type={randomFutureEvents[2]?.mood ?? "Chill"} 
+                                    title={randomFutureEvents[2]?.title ?? "Coming Soon"} 
+                                    description={randomFutureEvents[2]?.hook_line ?? "..."} 
+                                    duration={`${randomFutureEvents[2]?.duration_minutes ?? 0} mins`}
                                 />
                             </div>
                         </>
