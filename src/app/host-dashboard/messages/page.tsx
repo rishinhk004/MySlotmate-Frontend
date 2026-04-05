@@ -115,16 +115,16 @@ export default function HostMessagesPage() {
     const result = checkContentSync(messageText);
     setModerationResult(result);
 
-    if (result.isBlocked) {
+    if (result.score > 5) {
       toast.error(
-        `Message blocked: Spam/fraud/safety risk detected (Risk Level: ${result.score}/10).\n\n${result.details}`
+        `Message violates community guidelines (Risk Level: ${result.score}/10).\n\n${result.details}`
       );
       return;
     }
 
-    if (result.score > 5) {
+    if (result.score >= 3) {
       toast.warning(
-        `⚠️ High-risk message (Risk Level: ${result.score}/10): ${result.details}\n\nMessage sent but flagged for review.`
+        `⚠️ Warning: ${result.details} (Risk Level: ${result.score}/10)`
       );
     }
 
@@ -315,16 +315,16 @@ export default function HostMessagesPage() {
                   const result = checkContentSync(message);
                   setModerationResult(result);
 
-                  if (result.isBlocked) {
+                  if (result.score > 5) {
                     toast.error(
-                      `Broadcast blocked: Spam/fraud/safety risk detected (Risk Level: ${result.score}/10).\n\n${result.details}`
+                      `Broadcast violates community guidelines (Risk Level: ${result.score}/10).\n\n${result.details}`
                     );
                     return;
                   }
 
-                  if (result.score > 5) {
+                  if (result.score >= 3) {
                     toast.warning(
-                      `⚠️ High-risk broadcast (Risk Level: ${result.score}/10): ${result.details}\n\nBroadcast sent but flagged for review.`
+                      `⚠️ Warning: ${result.details} (Risk Level: ${result.score}/10)`
                     );
                   }
 

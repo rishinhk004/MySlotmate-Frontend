@@ -42,19 +42,16 @@ export default function ReviewModal({
     // Check content moderation
     const moderationResult = checkContentSync(description);
 
-    if (moderationResult.isBlocked) {
+    if (moderationResult.score > 5) {
       setError(
-        `Review blocked: Spam/fraud/safety risk detected (Risk Level: ${moderationResult.score}/10). ${moderationResult.details}`
-      );
-      toast.error(
-        `Review blocked: Spam/fraud/safety risk detected (Risk Level: ${moderationResult.score}/10)`
+        `Review violates community guidelines (Risk Level: ${moderationResult.score}/10). ${moderationResult.details}`
       );
       return;
     }
 
-    if (moderationResult.score > 5) {
+    if (moderationResult.score >= 3) {
       toast.warning(
-        `⚠️ High-risk review (Risk Level: ${moderationResult.score}/10): ${moderationResult.details}`
+        `⚠️ Warning: ${moderationResult.details} (Risk Level: ${moderationResult.score}/10)`
       );
     }
 

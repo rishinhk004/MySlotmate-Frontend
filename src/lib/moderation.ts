@@ -19,6 +19,7 @@ export interface ModerationResult {
     dating: number;
     sexual: number;
     manipulation: number;
+    profanity: number;
   };
   flaggedKeywords: string[];
   details: string;
@@ -31,6 +32,7 @@ interface GeminiCategoryScores {
   dating?: number;
   sexual?: number;
   manipulation?: number;
+  profanity?: number;
 }
 
 interface GeminiResponse {
@@ -91,6 +93,7 @@ const MALICIOUS_PATTERNS = {
     "late night meetup",
     "after party",
     "no one will know",
+    "one night stand",
   ],
   dating: [
     "looking for partner",
@@ -112,6 +115,7 @@ const MALICIOUS_PATTERNS = {
   ],
   sexual: [
     "hookup",
+    "one night stand",
     "make out",
     "cuddle",
     "intimacy",
@@ -124,6 +128,89 @@ const MALICIOUS_PATTERNS = {
     "chill night",
     "private fun",
     "satisfaction",
+    "casual sex",
+    "casual hookup",
+    "no strings attached",
+    "nsa",
+    "arrangements",
+    "sugar daddy",
+    "sugar mama",
+    "sugar baby",
+    "escort",
+    "call girl",
+    "gigolo",
+    "companion",
+    "nsfw",
+    "x-rated",
+    "adult content",
+    "erotic",
+    "sensual",
+    "passionate night",
+    "steamy",
+    "flirty",
+    "seduction",
+    "seduce",
+    "tempted",
+    "moan",
+    "orgasm",
+    "horny",
+    "aroused",
+    "wet",
+    "hard",
+    "penetrate",
+    "cock",
+    "pussy",
+    "ass",
+    "tits",
+    "boobs",
+    "breasts",
+    "blow job",
+    "blowjob",
+    "handjob",
+    "cumming",
+    "cum",
+    "creampie",
+    "gangbang",
+    "threesome",
+    "orgy",
+    "anal",
+    "69",
+    "fwb",
+    "friends with benefits",
+    "benefits",
+    "booty call",
+    "quickie",
+    "kinky",
+    "bondage",
+    "bdsm",
+    "dom",
+    "sub",
+    "dominant",
+    "submissive",
+    "tied up",
+    "spank",
+    "whip",
+    "roleplay",
+    "roleplay sex",
+    "naughty",
+    "dirty talk",
+    "pillow talk",
+    "sexting",
+    "sending pics",
+    "nudes",
+    "naked photos",
+    "cam show",
+    "strip",
+    "stripper",
+    "pole dance",
+    "massage parlor",
+    "happy ending",
+    "sexual favor",
+    "sexual service",
+    "paid sex",
+    "prostitute",
+    "transactional sex",
+    "paid companion",
   ],
   manipulation: [
     "trust me",
@@ -137,6 +224,32 @@ const MALICIOUS_PATTERNS = {
     "exclusive invite",
     "limited people only",
     "special access",
+  ],
+  profanity: [
+    "fuck",
+    "shit",
+    "asshole",
+    "bastard",
+    "bitch",
+    "damn",
+    "dammit",
+    "bullshit",
+    "crap",
+    "piss",
+    "dickhead",
+    "motherfucker",
+    "sonofabitch",
+    "hell",
+    "goddamn",
+    "motherfucking",
+    "shitty",
+    "bitchy",
+    "crappy",
+    "fucked",
+    "fcuk",
+    "f**k",
+    "sh*t",
+    "a**hole",
   ],
 };
 
@@ -153,6 +266,7 @@ function analyzePatterns(text: string): ModerationResult {
     dating: 0,
     sexual: 0,
     manipulation: 0,
+    profanity: 0,
   };
 
   const flaggedKeywords: Set<string> = new Set<string>();
@@ -176,7 +290,8 @@ function analyzePatterns(text: string): ModerationResult {
 
   // Calculate weighted score
   const weights: Record<string, number> = {
-    sexual: 3,
+    profanity: 5,
+    sexual: 5,
     unsafeMeetups: 2.5,
     payments: 2,
     dating: 1.5,
@@ -196,7 +311,7 @@ function analyzePatterns(text: string): ModerationResult {
 
   return {
     score,
-    isBlocked: score > 5,
+    isBlocked: score >= 3,
     categories,
     flaggedKeywords: Array.from(flaggedKeywords),
     details: `Detected ${flaggedKeywords.size} malicious keyword(s) across ${
@@ -213,14 +328,14 @@ export async function analyzeContent(text: string): Promise<ModerationResult> {
   // First pass: pattern matching (fast, local)
   const patternResult = analyzePatterns(text);
 
-  // If score is already high/very high, return immediately
+  // If score is already very high, return immediately
   if (patternResult.score >= 7) {
     return patternResult;
   }
 
-  // If Gemini API is configured and score is uncertain (4-7), use AI for deeper analysis
+  // If Gemini API is configured and score is borderline/high (2-7), use AI for deeper analysis
   const apiKey = process.env.GEMINI_API_KEY;
-  if (apiKey && patternResult.score >= 4) {
+  if (apiKey && patternResult.score >= 2) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
       const genAI = new GoogleGenerativeAI(apiKey);
@@ -228,11 +343,12 @@ export async function analyzeContent(text: string): Promise<ModerationResult> {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `Analyze the following text for malicious intent patterns including:
+- Profanity/abusive language (damn, shit, fuck, asshole, bitch, etc.)
+- Sexual/hookup content (one night stand, no strings attached, casual sex, escort, nudes, sexting, etc.)
 - Contact sharing/moving off platform (WhatsApp, Telegram, Instagram DMs, phone numbers, emails)
 - Off-platform payments (advance payment, crypto, cash only, direct transfer)
 - Unsafe meetups (private locations, hotels, "no one will know")
 - Dating/romantic intent (partner search, casual dating, relationship seeking)
-- Sexual/suggestive content (hookup, intimacy, adult content)
 - Manipulation/suspicious behavior (trust me, keep secret, exclusive access)
 
 Text to analyze: "${text}"
@@ -241,11 +357,12 @@ Respond with a JSON object containing:
 {
   "riskLevel": number (1-10),
   "categories": {
+    "profanity": number (0-3),
+    "sexual": number (0-3),
     "contactSharing": number (0-3),
     "payments": number (0-3),
     "unsafeMeetups": number (0-3),
     "dating": number (0-3),
-    "sexual": number (0-3),
     "manipulation": number (0-3)
   },
   "explanation": "brief explanation"
@@ -257,22 +374,23 @@ Respond with a JSON object containing:
       const responseText = result.response.text();
 
       // Parse JSON response
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const jsonMatch = /\{[\s\S]*\}/.exec(responseText);
       if (!jsonMatch?.[0]) {
         return patternResult;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const aiResult: GeminiResponse = JSON.parse(jsonMatch[0]);
 
       const riskLevel = aiResult.riskLevel ?? patternResult.score;
-      const isBlocked = typeof riskLevel === "number" && riskLevel > 5;
+      const isBlocked = typeof riskLevel === "number" && riskLevel >= 3;
 
       return {
         score: Math.min(10, Math.max(1, riskLevel)),
         isBlocked,
         categories: {
+          profanity: aiResult.categories?.profanity ?? 0,
           contactSharing: aiResult.categories?.contactSharing ?? 0,
           payments: aiResult.categories?.payments ?? 0,
           unsafeMeetups: aiResult.categories?.unsafeMeetups ?? 0,

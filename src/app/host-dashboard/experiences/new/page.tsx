@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { HostNavbar } from "~/components/host-dashboard";
 import Breadcrumb from "~/components/Breadcrumb";
 import { useMyHost, useCreateEvent, useUploadFiles, usePublishEvent } from "~/hooks/useApi";
-import { FiArrowLeft, FiArrowRight, FiUpload, FiX, FiCheck, FiMapPin, FiClock, FiUsers, FiCalendar, FiDollarSign, FiShare2, FiExternalLink } from "react-icons/fi";
+import { useContentModeration } from "~/hooks/useContentModeration";
+import { FiArrowLeft, FiArrowRight, FiUpload, FiX, FiCheck, FiMapPin, FiClock, FiUsers, FiCalendar, FiDollarSign, FiShare2, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -231,7 +232,7 @@ function PreviewCard({ form }: { form: FormData }) {
         {form.coverImagePreview ? (
           <img src={form.coverImagePreview} alt="Preview" className="w-full h-40 object-cover" />
         ) : (
-          <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+          <div className="w-full h-40 bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center">
             <span className="text-gray-400 text-sm">No image uploaded</span>
           </div>
         )}
@@ -371,6 +372,8 @@ export default function CreateExperiencePage() {
   const createEvent = useCreateEvent();
   const uploadFiles = useUploadFiles();
   const publishEvent = usePublishEvent();
+  const { checkContentSync } = useContentModeration();
+  const [descriptionWarning, setDescriptionWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (isHydrated && !userId && !hostLoading) {
@@ -412,6 +415,30 @@ export default function CreateExperiencePage() {
   };
 
   /* ---------------------------------------------------------------- */
+  /*  Content Moderation                                               */
+  /* ---------------------------------------------------------------- */
+  const handleDescriptionChange = (value: string) => {
+    updateForm("description", value);
+    
+    if (value.trim().length > 0) {
+      const result = checkContentSync(value);
+      if (result.score > 5) {
+        setDescriptionWarning(
+          `⚠️ Warning: ${result.details} (Risk Level: ${result.score}/10)`
+        );
+      } else if (result.score >= 3) {
+        setDescriptionWarning(
+          `ℹ️ Note: ${result.details} (Risk Level: ${result.score}/10)`
+        );
+      } else {
+        setDescriptionWarning(null);
+      }
+    } else {
+      setDescriptionWarning(null);
+    }
+  };
+
+  /* ---------------------------------------------------------------- */
   /*  Validation                                                       */
   /* ---------------------------------------------------------------- */
   const validateStep1 = (): boolean => {
@@ -431,6 +458,16 @@ export default function CreateExperiencePage() {
       toast.error("Please add a description");
       return false;
     }
+
+    // Check description for malicious content
+    const descriptionCheck = checkContentSync(form.description);
+    if (descriptionCheck.score > 5) {
+      toast.error(
+        `Description violates community guidelines (Risk Level: ${descriptionCheck.score}/10). ${descriptionCheck.details}`
+      );
+      return false;
+    }
+
     return true;
   };
 
@@ -655,13 +692,25 @@ export default function CreateExperiencePage() {
                 </label>
                 <textarea
                   value={form.description}
-                  onChange={(e) => updateForm("description", e.target.value)}
+                  onChange={(e) => handleDescriptionChange(e.target.value)}
                   placeholder="Describe what guests will experience, what they'll learn, and what makes your experience special..."
                   rows={5}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none resize-none"
                   maxLength={2000}
                 />
-                <p className="text-xs text-gray-400">{form.description.length}/2000 characters</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-400">{form.description.length}/2000 characters</p>
+                </div>
+                {descriptionWarning && (
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                    descriptionWarning.includes("⚠️") 
+                      ? "bg-red-50 text-red-700 border border-red-200" 
+                      : "bg-blue-50 text-blue-700 border border-blue-200"
+                  }`}>
+                    <FiAlertTriangle size={16} className="shrink-0" />
+                    <span>{descriptionWarning}</span>
+                  </div>
+                )}
               </div>
 
               {/* Visuals Section */}

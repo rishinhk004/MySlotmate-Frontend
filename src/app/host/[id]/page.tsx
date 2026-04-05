@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useRef, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "~/utils/firebase";
 import {
@@ -12,8 +12,7 @@ import {
   ExperiencesList,
 } from "~/components/host";
 import { Navbar, Breadcrumb } from "~/components";
-import { FiChevronRight } from "react-icons/fi";
-import Link from "next/link";
+import { ReviewModal } from "~/components/activities";
 import {
   usePublicHostProfile,
   useEventsByHost,
@@ -30,6 +29,8 @@ export default function HostProfilePage({
 }) {
   const { id: _hostId } = use(params);
   const [user] = useAuthState(auth);
+  const experiencesRef = useRef<HTMLDivElement>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const { data: host, isLoading: hostLoading } = usePublicHostProfile(_hostId);
   const { data: events } = useEventsByHost(_hostId);
@@ -70,6 +71,20 @@ export default function HostProfilePage({
     return Array.from(set);
   }, [events]);
 
+  // Handler functions
+  const handleViewExperiences = () => {
+    experiencesRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleWriteReview = () => {
+    setShowReviewModal(true);
+  };
+
+  const handleReadAllReviews = () => {
+    // For now, scroll to ratings section
+    // Could be extended to show a modal with all reviews
+  };
+
   if (hostLoading || !host) {
     return (
       <main className="min-h-screen bg-gray-50">
@@ -98,7 +113,11 @@ export default function HostProfilePage({
         />
 
         {/* Profile Header */}
-        <ProfileHeader host={host} />
+        <ProfileHeader 
+          host={host} 
+          onViewExperiences={handleViewExperiences}
+          onWriteReview={handleWriteReview}
+        />
 
         {/* Gallery */}
         {galleryUrls.length > 0 && (
@@ -133,17 +152,29 @@ export default function HostProfilePage({
               reviews={reviews}
               hostId={currentUserHost?.id}
               eventHostId={_hostId}
+              onReadAllReviews={handleReadAllReviews}
             />
           </div>
         </div>
 
         {/* Live & Upcoming Experiences */}
         {events && events.length > 0 && (
-          <div className="mt-10 mb-12">
+          <div ref={experiencesRef} className="mt-10 mb-12">
             <ExperiencesList events={events} />
           </div>
         )}
       </div>
+
+      {/* Review Modal */}
+      {events && events.length > 0 && user?.uid && (
+        <ReviewModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          eventId={events[0]!.id}
+          eventTitle={events[0]!.title}
+          userId={user.uid}
+        />
+      )}
     </main>
   );
 }

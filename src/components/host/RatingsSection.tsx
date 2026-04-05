@@ -165,12 +165,14 @@ export default function RatingsSection({
   reviews,
   hostId,
   eventHostId,
+  onReadAllReviews,
 }: {
   avg_rating: number;
   total_reviews: number;
   reviews: ReviewDTO[];
   hostId?: string;
   eventHostId?: string;
+  onReadAllReviews?: () => void;
 }) {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -193,7 +195,10 @@ export default function RatingsSection({
       </div>
 
       {/* Read All */}
-      <button className="mt-4 w-full rounded-full border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-[#0094CA] hover:text-[#0094CA]">
+      <button 
+        onClick={onReadAllReviews}
+        className="mt-4 w-full rounded-full border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-[#0094CA] hover:text-[#0094CA]"
+      >
         Read all {total_reviews} reviews
       </button>
     </div>

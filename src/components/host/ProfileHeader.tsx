@@ -8,7 +8,15 @@ import { IoLocationSharp } from "react-icons/io5";
 import { FiMessageSquare } from "react-icons/fi";
 import { HiArrowRight } from "react-icons/hi";
 
-export default function ProfileHeader({ host }: { host: PublicHostProfileDTO }) {
+export default function ProfileHeader({ 
+  host,
+  onViewExperiences,
+  onWriteReview,
+}: { 
+  host: PublicHostProfileDTO;
+  onViewExperiences?: () => void;
+  onWriteReview?: () => void;
+}) {
   const fullName = `${host.first_name} ${host.last_name}`;
 
   const socialLinks = [
@@ -76,11 +84,17 @@ export default function ProfileHeader({ host }: { host: PublicHostProfileDTO }) 
 
       {/* Right: Buttons */}
       <div className="flex flex-col items-center gap-3 sm:items-end">
-        <button className="flex items-center gap-2 rounded-full bg-[#0094CA] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#007aa8]">
+        <button 
+          onClick={onViewExperiences}
+          className="flex items-center gap-2 rounded-full bg-[#0094CA] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#007aa8]"
+        >
           View Live Experiences
           <HiArrowRight className="h-4 w-4" />
         </button>
-        <button className="flex items-center gap-2 rounded-full border-2 border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-[#0094CA] hover:text-[#0094CA]">
+        <button 
+          onClick={onWriteReview}
+          className="flex items-center gap-2 rounded-full border-2 border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-[#0094CA] hover:text-[#0094CA]"
+        >
           <FiMessageSquare className="h-4 w-4" />
           Write a Review
         </button>

@@ -81,16 +81,16 @@ export default function InboxSidebar({
     // Check content moderation
     const moderationResult = checkContentSync(messageText);
 
-    if (moderationResult.isBlocked) {
+    if (moderationResult.score > 5) {
       toast.error(
-        `Message blocked: Spam/fraud/safety risk detected (Risk Level: ${moderationResult.score}/10)`
+        `Message violates community guidelines (Risk Level: ${moderationResult.score}/10). ${moderationResult.details}`
       );
       return;
     }
 
-    if (moderationResult.score > 5) {
+    if (moderationResult.score >= 3) {
       toast.warning(
-        `⚠️ High-risk message (Risk Level: ${moderationResult.score}/10). Message sent but flagged for review.`
+        `⚠️ Warning: ${moderationResult.details} (Risk Level: ${moderationResult.score}/10)`
       );
     }
 
