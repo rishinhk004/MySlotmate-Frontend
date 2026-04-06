@@ -1,9 +1,14 @@
-"use client";
-import { useEffect, useState, useMemo } from "react";
+﻿"use client";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useListHosts } from "~/hooks/useApi";
-import { getSavedLocation, calculateDistance, POPULAR_CITIES, type CityLocation } from "../LocationModal";
 import { LuLoader2 } from "react-icons/lu";
+import { useListHosts } from "~/hooks/useApi";
+import {
+  POPULAR_CITIES,
+  calculateDistance,
+  getSavedLocation,
+  type CityLocation,
+} from "../LocationModal";
 
 interface PeopleCardProps {
   id: string;
@@ -17,31 +22,28 @@ const PeopleCard = ({ id, name, imageUrl, rating, isVerified }: PeopleCardProps)
   return (
     <Link
       href={`/host/${id}`}
-      className="shrink-0 snap-start flex flex-col items-center hover:scale-105 transition-transform"
+      className="shrink-0 snap-start overflow-hidden rounded-3xl border border-[#aeddf89e] bg-white shadow-[0_14px_32px_rgba(77,140,190,0.08)] transition hover:-translate-y-1"
     >
-      <div
-        className="bg-gray-200 rounded-2xl w-40 h-48 overflow-hidden relative"
-        style={{
-          backgroundImage: `url(${imageUrl || "/assets/home/people1.png"})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        {isVerified && (
-          <div className="absolute bottom-2 right-2 bg-[#0094CA] rounded-full p-1">
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+      <div className="relative h-56 w-[236px] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl || "/assets/home/people1.png"} alt={name} className="h-full w-full object-cover" />
+        {isVerified ? (
+          <span className="absolute bottom-3 right-3 rounded-full bg-[#0094CA] p-1.5 text-white">
+            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
-          </div>
-        )}
+          </span>
+        ) : null}
       </div>
-      <p className="text-sm font-medium text-gray-800 mt-2 text-center">{name}</p>
-      <div className="flex items-center gap-1 mt-1">
-        <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-        <p className="text-sm text-gray-600">{rating}</p>
+      <div className="space-y-1 p-4">
+        <p className="line-clamp-1 text-base font-bold text-[#16304c]">{name}</p>
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#4b94c8]">Local Host</p>
+        <p className="text-xs text-[#6f8daa]">Verified community-driven experiences</p>
+        <div className="pt-1 text-xs font-bold text-[#5e88ab]">Rating {rating}</div>
       </div>
     </Link>
   );
@@ -52,106 +54,82 @@ const People = ({ currentHostId }: { currentHostId?: string | null }) => {
   const [mounted, setMounted] = useState(false);
   const { data: hosts, isLoading } = useListHosts();
 
-  // Load saved location on mount
   useEffect(() => {
     setLocation(getSavedLocation());
     setMounted(true);
-    
-    // Listen for location changes
+
     const handleStorageChange = () => {
       setLocation(getSavedLocation());
     };
+
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Filter hosts by distance (nearest first) and exclude current host
   const filteredHosts = useMemo(() => {
     if (!hosts) return [];
-    
-    // Filter out current host
-    const hostsWithoutCurrentHost = currentHostId 
-      ? hosts.filter(host => host.id !== currentHostId)
+
+    const hostsWithoutCurrentHost = currentHostId
+      ? hosts.filter((host) => host.id !== currentHostId)
       : hosts;
-    
+
     if (!mounted || !location) {
       return hostsWithoutCurrentHost.slice(0, 8);
     }
-    
-    // Calculate distance for each host
-    const hostsWithDistance = hostsWithoutCurrentHost.map((host) => {
-      let distance = Infinity; // Default: very far away
-      
-      // Find host's city in POPULAR_CITIES to get coordinates
-      const hostCity = POPULAR_CITIES.find(
-        (city) => city.city.toLowerCase() === host.city.toLowerCase()
-      );
-      
-      if (hostCity) {
-        distance = calculateDistance(
-          location.lat,
-          location.lng,
-          hostCity.lat,
-          hostCity.lng
+
+    return hostsWithoutCurrentHost
+      .map((host) => {
+        const hostCity = POPULAR_CITIES.find(
+          (city) => city.city.toLowerCase() === host.city.toLowerCase(),
         );
-      } else {
-        distance = Infinity; // Will appear at the end
-      }
-      
-      return { host, distance };
-    });
-    
-    // Sort by distance (nearest first) and return top 8
-    const sorted = hostsWithDistance
+
+        const distance = hostCity
+          ? calculateDistance(location.lat, location.lng, hostCity.lat, hostCity.lng)
+          : Number.POSITIVE_INFINITY;
+
+        return { host, distance };
+      })
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 8)
       .map(({ host }) => host);
-    
-    return sorted;
   }, [hosts, location, mounted, currentHostId]);
 
   return (
-    <div className="mx-auto mt-8 flex w-full max-w-7xl flex-col">
-      <div className="flex justify-between items-center mb-4 site-x">
-        <h1 className="text-xl font-semibold text-gray-900">
-          Interesting People Near You
-        </h1>
-        <Link href="/hosts" className="text-[#0094CA] text-sm flex items-center gap-2 hover:opacity-80">
-          <span>see more</span>
-          <span className="bg-[#0094CA] w-8 h-8 flex items-center justify-center rounded-full">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </span>
-        </Link>
-      </div>
+    <section className="w-full site-x">
+      <div className="mx-auto w-full max-w-[1120px]">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <h2 className="font-[Outfit,sans-serif] text-3xl font-bold tracking-[-0.04em] text-[#16304c] sm:text-4xl">
+            Interesting People Near You
+          </h2>
+          <Link href="/hosts" className="text-sm font-extrabold text-[#0e8ae0] hover:text-[#0b6eb1]">
+            View All
+          </Link>
+        </div>
 
-      <div
-        className="flex flex-row items-center site-x justify-start gap-6 overflow-x-auto pb-4 snap-x snap-mandatory hide-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center w-full py-12">
-            <LuLoader2 className="h-8 w-8 animate-spin text-[#0094CA]" />
-          </div>
-        ) : filteredHosts.length === 0 ? (
-          <div className="flex items-center justify-center w-full py-12">
-            <p className="text-gray-500">No hosts found in your area</p>
-          </div>
-        ) : (
-          filteredHosts.map((host) => (
-            <PeopleCard
-              key={host.id}
-              id={host.id}
-              name={host.first_name}
-              imageUrl={host.avatar_url ?? "/assets/home/people1.png"}
-              rating={(host.avg_rating ?? 4.5).toFixed(1)}
-              isVerified={host.is_identity_verified}
-            />
-          ))
-        )}
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 hide-scrollbar">
+          {isLoading ? (
+            <div className="flex w-full items-center justify-center py-12">
+              <LuLoader2 className="h-8 w-8 animate-spin text-[#0094CA]" />
+            </div>
+          ) : filteredHosts.length === 0 ? (
+            <div className="flex w-full items-center justify-center rounded-3xl border border-dashed border-sky-200 bg-white/80 py-12 text-sm text-[#6f8daa]">
+              No hosts found in your area.
+            </div>
+          ) : (
+            filteredHosts.map((host) => (
+              <PeopleCard
+                key={host.id}
+                id={host.id}
+                name={host.first_name}
+                imageUrl={host.avatar_url ?? "/assets/home/people1.png"}
+                rating={(host.avg_rating ?? 4.5).toFixed(1)}
+                isVerified={host.is_identity_verified}
+              />
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 

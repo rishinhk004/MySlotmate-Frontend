@@ -3,6 +3,7 @@ import "~/styles/globals.css";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import Providers from "~/components/Providers";
+import AIFormEnhancer from "~/components/AIFormEnhancer";
 import { Toaster } from "sonner";
 
 const appUrl = "https://www.myslotmate.com";

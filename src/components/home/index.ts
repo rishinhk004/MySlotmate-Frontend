@@ -6,4 +6,5 @@ import TrendingCard from "./TrendingCard";
 import Idea from "./Idea";
 import Footer from "./Footer";
 import AllHosts from "./AllHosts";
-export {Hero,people,Trending,Banner,TrendingCard,Idea,Footer,AllHosts};
+import ShowcaseSections from "./ShowcaseSections";
+export {Hero,people,Trending,Banner,TrendingCard,Idea,Footer,AllHosts,ShowcaseSections};

@@ -1,176 +1,215 @@
-"use client";
-import React, { useRef, useState, useEffect, useMemo } from "react";
+﻿"use client";
+import React, { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import HeroCard from "./HeroCard";
 import { useListPublicEvents } from "~/hooks/useApi";
 import { type EventDTO } from "~/lib/api";
 
 interface HeroProps {
-    filterBarRef?: React.RefObject<HTMLDivElement | null>;
+  filterBarRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
-    const heroRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
-    const [hoveredButton, setHoveredButton] = useState<"book" | "list" | null>(null);
-    const [hostId, setHostId] = useState<string | null>(null);
-    const { data: events } = useListPublicEvents();
-    
-    useEffect(() => {
-        const id = localStorage.getItem("msm_host_id");
-        setHostId(id);
-    }, []);
-    
-    // Get 3 random future events
-    const randomFutureEvents: EventDTO[] = useMemo<EventDTO[]>(() => {
-        if (!events) return [];
-        
-        const now = new Date();
-        const futureEvents = events.filter((event) => {
-            const eventDate = new Date(event.time);
-            return eventDate > now;
-        });
-        
-        if (futureEvents.length === 0) return [];
-        
-        // Shuffle and return 3 random events
-        const shuffled = [...futureEvents].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, 3);
-    }, [events]);
-    
-    const handleBookTime = () => {
-        if (filterBarRef?.current) {
-            filterBarRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        } else {
-            router.push("/experiences");
+  const router = useRouter();
+  const [hostId, setHostId] = useState<string | null>(null);
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
+  const { data: events } = useListPublicEvents();
+
+  useEffect(() => {
+    const id = localStorage.getItem("msm_host_id");
+    setHostId(id);
+  }, []);
+
+  useEffect(() => {
+    if (document.readyState === "complete") {
+      setIsPageLoaded(true);
+      return;
+    }
+
+    const handleWindowLoad = () => setIsPageLoaded(true);
+    window.addEventListener("load", handleWindowLoad);
+    return () => window.removeEventListener("load", handleWindowLoad);
+  }, []);
+
+  const upcomingEvents: EventDTO[] = useMemo(() => {
+    if (!events) return [];
+
+    const now = new Date();
+    const futureEvents = events.filter((event) => new Date(event.time) > now);
+    if (futureEvents.length === 0) return [];
+
+    return [...futureEvents].sort(() => Math.random() - 0.5).slice(0, 4);
+  }, [events]);
+
+  const cardData = [
+    upcomingEvents[0]
+      ? {
+          id: upcomingEvents[0].id,
+          photo: upcomingEvents[0].cover_image_url ?? "/assets/home/heropic1.png",
+          type: upcomingEvents[0].mood ?? "Adventure",
+          title: upcomingEvents[0].title,
+          description: upcomingEvents[0].hook_line ?? "Discover a hosted experience near you.",
+          duration: `${upcomingEvents[0].duration_minutes ?? 0} mins`,
         }
-    };
-    
-    const handleListTime = () => {
-        if (hostId) {
-            router.push("/host-dashboard/experiences");
-        } else {
-            router.push("/become-host");
+      : {
+          photo: "/assets/home/heropic1.png",
+          type: "Adventure",
+          title: "Mountain Trekking",
+          description: "Sunrise hikes with local experts.",
+          duration: "120 mins",
+        },
+    upcomingEvents[1]
+      ? {
+          id: upcomingEvents[1].id,
+          photo: upcomingEvents[1].cover_image_url ?? "/assets/home/heropic2.png",
+          type: upcomingEvents[1].mood ?? "Social",
+          title: upcomingEvents[1].title,
+          description: upcomingEvents[1].hook_line ?? "Meet people through shared interests.",
+          duration: `${upcomingEvents[1].duration_minutes ?? 0} mins`,
         }
-    };
+      : {
+          photo: "/assets/home/heropic2.png",
+          type: "Creative",
+          title: "Scuba Diving",
+          description: "Dive into curated local adventures.",
+          duration: "90 mins",
+        },
+    upcomingEvents[2]
+      ? {
+          id: upcomingEvents[2].id,
+          photo: upcomingEvents[2].cover_image_url ?? "/assets/home/heropic3.png",
+          type: upcomingEvents[2].mood ?? "Relaxing",
+          title: upcomingEvents[2].title,
+          description: upcomingEvents[2].hook_line ?? "Try something new this weekend.",
+          duration: `${upcomingEvents[2].duration_minutes ?? 0} mins`,
+        }
+      : {
+          photo: "/assets/home/heropic3.png",
+          type: "Wellness",
+          title: "Urban Photography Walk",
+          description: "Capture city stories with a host.",
+          duration: "180 mins",
+        },
+    upcomingEvents[3]
+      ? {
+          id: upcomingEvents[3].id,
+          photo: upcomingEvents[3].cover_image_url ?? "/assets/home/heropic4.png",
+          type: upcomingEvents[3].mood ?? "Cultural",
+          title: upcomingEvents[3].title,
+          description: upcomingEvents[3].hook_line ?? "Explore stories with local experts.",
+          duration: `${upcomingEvents[3].duration_minutes ?? 0} mins`,
+        }
+      : {
+          photo: "/assets/home/heropic1.png",
+          type: "Cultural",
+          title: "Heritage Walk",
+          description: "Uncover hidden stories around your city.",
+          duration: "150 mins",
+        },
+  ];
 
+  const handleBookTime = () => {
+    if (filterBarRef?.current) {
+      filterBarRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    router.push("/experiences");
+  };
 
-    return (
-        <div 
-            ref={heroRef}
-            className="relative w-full overflow-hidden"
-        >
+  const handleListTime = () => {
+    if (hostId) {
+      router.push("/host-dashboard/experiences");
+      return;
+    }
+    router.push("/become-host");
+  };
 
-            {/* Content Layer */}
-            <div className="relative z-10 py-[5rem] site-x w-full justify-around gap-[3rem] items-center flex flex-col lg:flex-row text-[#000000]">
-                <div className="flex flex-col scale-100 lg:scale-150">
-                    <h1 className="text-2xl font-bold text-center lg:text-left">
-                        Book People&apos;s<br />
-                        <span className="text-[#0094CA]">Time.</span>
-                    </h1>
-                    <p className="text-sm text-center text-[#606060] lg:text-left mb-4">
-                        Pick an interest. Meet someone who shares it.
-                    </p>
-                    <div className="flex flex-row gap-6 justify-start items-center text-semibold">
-                        <button 
-                            onClick={handleBookTime}
-                            onMouseEnter={() => setHoveredButton("book")}
-                            onMouseLeave={() => setHoveredButton(null)}
-                            className={`w-[45%] lg:w-auto lg:px-6 rounded-md mt-2 p-2 transition-all duration-300 ease-out hover:-translate-y-1 text-sm ${
-                                hoveredButton === "list"
-                                    ? "bg-[#ffffff] text-[#231F20] border border-[#BBBBBB]"
-                                    : "bg-[#0094CA] text-[#ffffff]"
-                            }`}
-                        >
-                            Book Time
-                        </button>
-                        <button 
-                            onClick={handleListTime}
-                            onMouseEnter={() => setHoveredButton("list")}
-                            onMouseLeave={() => setHoveredButton(null)}
-                            className={`w-[45%] lg:w-auto lg:px-6 rounded-md mt-2 p-2 transition-all duration-300 ease-out hover:-translate-y-1 text-sm ${
-                                hoveredButton === "list"
-                                    ? "bg-[#0094CA] text-[#ffffff]"
-                                    : "bg-[#ffffff] text-[#231F20] border border-[#BBBBBB]"
-                            }`}
-                        >
-                            List Time
-                        </button>
-                    </div>
-                    
-                    <div className="flex flex-row justify-center items-center lg:justify-start mt-4">
-                        <div className="flex -space-x-2">
-                            <div className="h-[1.5rem] w-[1.5rem] rounded-full bg-[#EEEEEE] border border-[#ffffff]"><img className="rounded-full" src="/assets/home/profile1.png" alt="P1"/></div>
-                            <div className="h-[1.5rem] w-[1.5rem] rounded-full bg-[#EEEEEE] border border-[#ffffff]"><img className="rounded-full" src="/assets/home/profile2.png" alt="P2"/></div>
-                            <div className="h-[1.5rem] w-[1.5rem] rounded-full bg-[#EEEEEE] border border-[#ffffff]"><img className="rounded-full" src="/assets/home/profile3.png" alt="P3"/></div>
-                            <div className="h-[1.5rem] w-[1.5rem] rounded-full bg-[#EEEEEE] border border-[#ffffff] text-[#000000] text-[0.5rem] flex items-center justify-center"><span>+10K</span></div>
-                        </div>
-                        <p className="text-[0.5rem] text-[#8E8E8E] ml-2">Used by interesting people</p>
-                    </div>
+  return (
+    <section className="relative z-0 w-full site-x">
+      <div className="mx-auto grid w-full max-w-[1120px] gap-8 py-8 md:py-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-10">
+        <div className="space-y-4">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#4a8ab8]">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+            Find Meaningful Time
+          </span>
+
+          <h1 className="max-w-[560px] font-[Outfit,sans-serif] text-4xl font-extrabold leading-[0.95] tracking-[-0.05em] text-[#16304c] sm:text-5xl lg:text-7xl">
+            Book People&apos;s
+            <span className="text-[#0e8ae0]"> Time.</span>
+          </h1>
+
+          <p className="max-w-[520px] text-sm leading-7 text-[#6f8daa] sm:text-base">
+            Pick an interest, match with local hosts, and spend your time on experiences that actually feel memorable.
+          </p>
+
+          <div className="flex flex-wrap gap-3 pt-1">
+            <button
+              onClick={handleBookTime}
+              className="rounded-lg bg-[linear-gradient(135deg,#1fa7ff,#63ceff)] px-5 py-3 text-sm font-extrabold text-white shadow-[0_16px_32px_rgba(31,167,255,0.24)] transition hover:-translate-y-0.5"
+            >
+              Book Time
+            </button>
+            <button
+              onClick={handleListTime}
+              className="rounded-lg border border-[#78bce759] bg-white/90 px-5 py-3 text-sm font-extrabold text-[#336f9b] shadow-[0_10px_24px_rgba(74,141,194,0.08)] transition hover:-translate-y-0.5"
+            >
+              List Time
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 pt-1">
+            <div className="flex -space-x-3">
+              {["/assets/home/profile1.png", "/assets/home/profile2.png", "/assets/home/profile3.png"].map((img, idx) => (
+                <div key={img} className="h-11 w-11 overflow-hidden rounded-full border-4 border-[#f7fbff] shadow-[0_10px_22px_rgba(84,140,191,0.08)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt={`Community ${idx + 1}`} className="h-full w-full object-cover" />
                 </div>
-
-                <div className='group relative isolate flex flex-col items-center justify-center gap-4 lg:gap-0'>
-                    <div
-                        className="pointer-events-none absolute inset-[-8rem] -z-0 rounded-lg opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100"
-                        style={{
-                            backgroundImage:
-                                "radial-gradient(circle at center, rgba(255, 182, 193, 0.15) 0%, rgba(255, 192, 203, 0.08) 34%, rgba(255, 200, 210, 0) 82%), linear-gradient(to right, rgba(240, 200, 210, 0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(240, 200, 210, 0.4) 1px, transparent 1px)",
-                            backgroundSize: "100% 100%, 60px 60px, 60px 60px",
-                            backgroundPosition: "center, center, center",
-                            maskImage: "radial-gradient(circle at center, rgba(0, 0, 0, 0.95) 14%, rgba(0, 0, 0, 0.55) 52%, rgba(0, 0, 0, 0.2) 72%, rgba(0, 0, 0, 0) 100%)",
-                            WebkitMaskImage: "radial-gradient(circle at center, rgba(0, 0, 0, 0.95) 14%, rgba(0, 0, 0, 0.55) 52%, rgba(0, 0, 0, 0.2) 72%, rgba(0, 0, 0, 0) 100%)",
-                        }}
-                    />
-                    {randomFutureEvents && randomFutureEvents.length > 0 ? (
-                        <>
-                            <div className="relative z-10 origin-bottom-right transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[1rem] lg:group-hover:rotate-[7deg]">
-                                <HeroCard 
-                                    id={randomFutureEvents[0]!.id}
-                                    photo={randomFutureEvents[0]!.cover_image_url ?? "/assets/home/heropic1.png"} 
-                                    type={randomFutureEvents[0]!.mood ?? "Adventure"} 
-                                    title={randomFutureEvents[0]!.title} 
-                                    description={randomFutureEvents[0]!.hook_line ?? "..."} 
-                                    duration={`${randomFutureEvents[0]!.duration_minutes ?? 0} mins`}
-                                />
-                            </div>
-                            <div className="relative z-10 origin-center transition-transform duration-500 ease-out lg:group-hover:-rotate-[7deg]">
-                                <HeroCard 
-                                    id={randomFutureEvents[1]?.id}
-                                    photo={randomFutureEvents[1]?.cover_image_url ?? "/assets/home/heropic2.png"} 
-                                    type={randomFutureEvents[1]?.mood ?? "Adventure"} 
-                                    title={randomFutureEvents[1]?.title ?? "Coming Soon"} 
-                                    description={randomFutureEvents[1]?.hook_line ?? "..."} 
-                                    duration={`${randomFutureEvents[1]?.duration_minutes ?? 0} mins`}
-                                />
-                            </div>
-                            <div className="relative z-10 origin-top-left transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[-1rem] lg:group-hover:rotate-[7deg]">
-                                <HeroCard 
-                                    id={randomFutureEvents[2]?.id}
-                                    photo={randomFutureEvents[2]?.cover_image_url ?? "/assets/home/heropic3.png"} 
-                                    type={randomFutureEvents[2]?.mood ?? "Chill"} 
-                                    title={randomFutureEvents[2]?.title ?? "Coming Soon"} 
-                                    description={randomFutureEvents[2]?.hook_line ?? "..."} 
-                                    duration={`${randomFutureEvents[2]?.duration_minutes ?? 0} mins`}
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="relative z-10 origin-bottom-right transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[1rem] lg:group-hover:rotate-[7deg]">
-                                <HeroCard photo="/assets/home/heropic1.png" type="Adventure" title="Mountain Trekking" description="..." duration="2 days" />
-                            </div>
-                            <div className="relative z-10 origin-center transition-transform duration-500 ease-out lg:group-hover:-rotate-[7deg]">
-                                <HeroCard photo="/assets/home/heropic2.png" type="Adventure" title="Scuba Diving" description="..." duration="1 day" />
-                            </div>
-                            <div className="relative z-10 origin-top-left transition-transform duration-500 ease-out lg:translate-x-[10rem] lg:translate-y-[-1rem] lg:group-hover:rotate-[7deg]">
-                                <HeroCard photo="/assets/home/heropic3.png" type="Chill" title="Urban Photography Walk" description="..." duration="4 hours" />
-                            </div>
-                        </>
-                    )}
-                </div>
+              ))}
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-[#f7fbff] bg-[#f1f3f6] text-[10px] font-bold text-[#2b2d33] shadow-[0_10px_22px_rgba(84,140,191,0.08)]">
+                +10K
+              </div>
             </div>
+            <p className="text-sm text-[#9096a0]">Used by interesting people</p>
+          </div>
         </div>
-    );
-}
+
+        <div className="relative min-h-[420px] overflow-visible rounded-[38px] md:min-h-[520px]">
+          <div className="absolute inset-x-2 bottom-4 top-8 rounded-[38px] border border-[#aeddf899] bg-[linear-gradient(180deg,#e8f6ff,#f8fcff)] shadow-[0_24px_60px_rgba(58,119,172,0.12)]" />
+
+          <div className={`absolute inset-x-4 bottom-8 top-12 z-10 overflow-visible md:inset-x-6 md:bottom-10 md:top-14 ${isPageLoaded ? "hero-stack-ready" : ""}`}>
+            <div className="hero-stack-in absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+              <div className="hero-stack-drop">
+                <div className="-translate-x-6 -translate-y-10 -rotate-[8deg] md:-translate-x-10 md:-translate-y-12">
+                  <HeroCard {...cardData[0]!} />
+                </div>
+              </div>
+            </div>
+            <div className="hero-stack-in hero-stack-in-2 absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+              <div className="hero-stack-drop">
+                <div className="translate-y-1 rotate-0 md:translate-y-0">
+                  <HeroCard {...cardData[1]!} />
+                </div>
+              </div>
+            </div>
+            <div className="hero-stack-in hero-stack-in-3 absolute left-1/2 top-1/2 z-30 -translate-x-1/2 -translate-y-1/2">
+              <div className="hero-stack-drop">
+                <div className="translate-x-6 translate-y-10 rotate-[9deg] md:translate-x-10 md:translate-y-12">
+                  <HeroCard {...cardData[2]!} />
+                </div>
+              </div>
+            </div>
+            <div className="hero-stack-in hero-stack-in-4 absolute left-1/2 top-1/2 z-40 -translate-x-1/2 -translate-y-1/2">
+              <div className="hero-stack-drop">
+                <div className="translate-x-1 -translate-y-14 rotate-[4deg] md:translate-x-2 md:-translate-y-16">
+                  <HeroCard {...cardData[3]!} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 export default Hero;

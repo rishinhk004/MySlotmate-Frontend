@@ -1,5 +1,5 @@
-"use client";
-import { useState, useRef, useEffect } from "react";
+﻿"use client";
+import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "~/utils/firebase";
@@ -7,6 +7,7 @@ import { FiSearch, FiMenu, FiX, FiChevronRight } from "react-icons/fi";
 import { IoLocationSharp } from "react-icons/io5";
 import { LuCalendarDays, LuBookmarkMinus, LuMessageSquare, LuShield, LuFileText, LuLogOut, LuArrowLeft, LuHome, LuHeart } from "react-icons/lu";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import GoogleLogin from "./GoogleLogin";
 import LocationModal, { getSavedLocation, saveLocation, type CityLocation } from "./LocationModal";
 import { BecomeHostModal } from "./become-host";
@@ -26,18 +27,19 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const pathname = usePathname();
 
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
-  
+
   // Read localStorage on mount and when user auth state changes
   useEffect(() => {
     const readStoredId = () => {
       const id = localStorage.getItem("msm_user_id");
       setStoredUserId(id);
     };
-    
+
     readStoredId();
-    
+
     // Also listen for storage changes (handles updates from other tabs)
     window.addEventListener("storage", readStoredId);
     return () => window.removeEventListener("storage", readStoredId);
@@ -123,31 +125,93 @@ export default function Navbar() {
     localStorage.removeItem("msm_user_id");
     localStorage.removeItem("msm_host_id");
     localStorage.removeItem("msm_location");
-    
+
     // Clear query cache
     void queryClient.clear();
-    
+
     // Close modals
     setProfileOpen(false);
     setMobileOpen(false);
-    
+
     // Sign out from Firebase
     void signOut(auth);
+  };
+
+  const handleSectionLinkClick = (
+    e: ReactMouseEvent<HTMLAnchorElement>,
+    sectionId: string,
+    closeMobileDrawer = false,
+  ) => {
+    if (closeMobileDrawer) {
+      setMobileOpen(false);
+    }
+
+    // Keep default hash navigation on non-home routes.
+    if (pathname !== "/") {
+      return;
+    }
+
+    e.preventDefault();
+    const section = document.getElementById(sectionId);
+    if (!section) {
+      return;
+    }
+
+    const navOffset = 76;
+    const sectionTop = section.getBoundingClientRect().top + window.scrollY - navOffset;
+    window.scrollTo({
+      top: Math.max(sectionTop, 0),
+      behavior: "smooth",
+    });
+
+    if (window.location.hash !== `#${sectionId}`) {
+      window.history.replaceState(null, "", `/#${sectionId}`);
+    }
   };
 
   return (
     <>
       <nav className="sticky top-0 z-40 w-full bg-white shadow-sm">
         <div className="h-[3px] w-full bg-[#0094CA]" />
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between site-x">
+        <div className="mx-auto flex h-16 max-w-7xl items-center site-x">
           {/* Logo */}
-          <Link href = "/" className="flex-shrink-0">
+          <Link href="/" className="flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/assets/home/logo.png" alt="Myslotmate" className="h-10 w-auto" />
           </Link>
 
+          {/* Desktop center nav (matches reference nav styles) */}
+          <div className="hidden flex-1 items-center justify-center gap-[22px] text-[0.92rem] font-bold text-[#6f8daa] lg:flex">
+            <Link
+              href="/#how-it-works"
+              onClick={(e) => handleSectionLinkClick(e, "how-it-works")}
+              className="transition hover:text-[#0e8ae0]"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/#hosts"
+              onClick={(e) => handleSectionLinkClick(e, "hosts")}
+              className="transition hover:text-[#0e8ae0]"
+            >
+              Hosts
+            </Link>
+            <Link
+              href="/#community"
+              onClick={(e) => handleSectionLinkClick(e, "community")}
+              className="transition hover:text-[#0e8ae0]"
+            >
+              Community
+            </Link>
+            
+            
+          </div>
+
           {/* Desktop right side */}
-          <div className="hidden md:flex items-center gap-5">
+          <div className="ml-auto hidden items-center gap-5 lg:flex">
+            <Link href="/experiences" className="bg-[linear-gradient(135deg,#1fa7ff,#63ceff)] text-[#ffffff] hover:-translate-y-0.5 transition rounded-[8px] py-[13px] px-[20px] shadow-[0_16px_32px_rgba(31,167,255,0.24)] font-bold">
+              Explore
+            </Link>
             <button
               onClick={() => setLocationOpen(true)}
               className="flex items-center gap-1.5 text-sm rounded-lg px-2 py-1.5 hover:bg-gray-50 transition cursor-pointer"
@@ -397,14 +461,14 @@ export default function Navbar() {
                       {/* More */}
                       <p className="mb-1 mt-5 text-xs font-semibold uppercase tracking-wide text-gray-500">More</p>
                       <div className="rounded-xl border border-gray-200 divide-y divide-gray-200">
-                        <Link href = "/support/terms-conditions" className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition">
+                        <Link href="/support/terms-conditions" className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition">
                           <span className="flex items-center gap-3">
                             <LuShield className="h-5 w-5 text-gray-600" />
                             Terms &amp; Conditions
                           </span>
                           <FiChevronRight className="h-4 w-4 text-gray-400" />
                         </Link>
-                        <Link href = "/support/policies" className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition">
+                        <Link href="/support/policies" className="flex w-full items-center justify-between px-4 py-3.5 text-sm text-gray-800 hover:bg-gray-50 transition">
                           <span className="flex items-center gap-3">
                             <LuFileText className="h-5 w-5 text-gray-600" />
                             Privacy Policy
@@ -433,7 +497,7 @@ export default function Navbar() {
           {/* Hamburger — mobile */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden rounded-lg p-2 text-gray-700 hover:bg-gray-100 transition"
+            className="ml-auto rounded-lg p-2 text-gray-700 transition hover:bg-gray-100 lg:hidden"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <FiX className="h-6 w-6" /> : <FiMenu className="h-6 w-6" />}
@@ -442,7 +506,31 @@ export default function Navbar() {
 
         {/* Mobile drawer */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white site-x pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="border-t border-gray-100 bg-white site-x pb-4 pt-2 shadow-lg max-h-[80vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:hidden">
+            <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Link
+                href="/#how-it-works"
+                onClick={(e) => handleSectionLinkClick(e, "how-it-works", true)}
+                className="rounded-lg border border-[#d6ebf7] bg-[#f7fcff] px-3 py-2 text-center text-sm font-bold text-[#5d87a8] transition hover:text-[#0e8ae0]"
+              >
+                How it works
+              </Link>
+              <Link
+                href="/#hosts"
+                onClick={(e) => handleSectionLinkClick(e, "hosts", true)}
+                className="rounded-lg border border-[#d6ebf7] bg-[#f7fcff] px-3 py-2 text-center text-sm font-bold text-[#5d87a8] transition hover:text-[#0e8ae0]"
+              >
+                Hosts
+              </Link>
+              <Link
+                href="/#community"
+                onClick={(e) => handleSectionLinkClick(e, "community", true)}
+                className="rounded-lg border border-[#d6ebf7] bg-[#f7fcff] px-3 py-2 text-center text-sm font-bold text-[#5d87a8] transition hover:text-[#0e8ae0]"
+              >
+                Community
+              </Link>
+            </div>
+
             <button
               onClick={() => { setLocationOpen(true); setMobileOpen(false); }}
               className="flex items-center gap-2 py-3 w-full rounded-lg hover:bg-gray-50 transition"

@@ -1,42 +1,57 @@
-"use client";
+﻿"use client";
 import { useRouter } from "next/navigation";
 
-interface CardProps{
-    photo:string;
-    type:string;
-    title:string;
-    description:string;
-    duration:string;
-    id?: string;
+interface CardProps {
+  photo: string;
+  type: string;
+  title: string;
+  description: string;
+  duration: string;
+  id?: string;
 }
-const HeroCard=({photo,type,title,description,duration,id}:CardProps)=>{
-    const router = useRouter();
-    
-    const handleViewDetails = () => {
-        if (id) {
-            router.push(`/experience/${id}`);
-        }
-    };
-    
-    return(
-        <>
-            <div
-                className="flex flex-row rounded-2xl w-[18rem] h-[8rem] bg-[#ffffff] scale-100 md:scale-105 lg:scale-110 transition-all duration-300 mt-4 hover:shadow-2xl overflow-hidden"
-                style={{ boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', border: '1px solid var(--Colors-Neutral-500, #A4A4A4)' }}
+
+const HeroCard = ({ photo, type, title, description, duration, id }: CardProps) => {
+  const router = useRouter();
+
+  const handleViewDetails = () => {
+    if (id) {
+      router.push(`/experience/${id}`);
+    }
+  };
+
+  return (
+    <article className="w-[236px] rounded-3xl border border-sky-100 bg-white p-3 shadow-[0_20px_44px_rgba(60,121,175,0.14)] sm:w-[264px] md:w-[282px]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={photo}
+        alt={title}
+        className="h-36 w-full rounded-2xl object-cover sm:h-40"
+      />
+
+      <div className="mt-3 space-y-2">
+        <span className="inline-flex rounded-full bg-[#dff3ff] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#0e8ae0]">
+          {type}
+        </span>
+
+        <h3 className="line-clamp-1 text-sm font-bold text-[#16304c]">{title}</h3>
+        <p className="line-clamp-2 text-xs leading-5 text-[#6f8daa]">{description}</p>
+
+        <div className="flex items-center justify-between pt-1 text-xs">
+          <span className="rounded-full bg-[#f1f8ff] px-2.5 py-1 font-semibold text-[#3f7eb1]">
+            {duration}
+          </span>
+          {id ? (
+            <button
+              onClick={handleViewDetails}
+              className="font-bold text-[#0e8ae0] transition hover:text-[#0b6eb1]"
             >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt={title} className="object-cover rounded-l-2xl w-24 h-full flex-shrink-0" />
-                <div className="flex flex-col items-start justify-center p-2 flex-1 min-w-0 h-full overflow-hidden">
-                    <h1 className="text-xs font-bold text-[#6A9955] uppercase">{type}</h1>
-                    <h1 className="text-sm font-semibold truncate max-w-full">{title}</h1>
-                    <p className="text-xs text-[#6B7280] truncate max-w-full flex-1">{description}</p>
-                    <div className="flex flex-row justify-between w-full text-xs mt-auto">
-                        <span className="bg-[#F3F4F6] text-[#374151] p-0.5 rounded-[6px]">{duration}</span>
-                        <button onClick={handleViewDetails} className="text-[#127D87] hover:underline">View Details</button>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-}
+              View Details
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </article>
+  );
+};
+
 export default HeroCard;

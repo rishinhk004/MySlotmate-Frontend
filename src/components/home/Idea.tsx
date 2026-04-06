@@ -1,31 +1,73 @@
-const Idea=()=>{
-    return(
-        <div className="mx-auto my-10 w-full max-w-7xl site-x">
-            <div className="flex w-full flex-col items-center justify-center rounded-2xl p-8" style={{background: "linear-gradient(180deg, rgba(0, 148, 202, 0.1) 0%, rgba(255, 255, 255, 0.1) 100.13%)",border: "1.63px solid #0094CA33"}}>
-                <div className="flex flex-col items-center justify-center text-center">
-                    <h1 className="text-2xl font-bold">The <span className="text-[#0094CA]">Idea</span> Behind MySlotmate</h1>
-                    <p className="text-[#6B7280] text-md">Book time with interesting people</p>
+﻿"use client";
+import { useRouter } from "next/navigation";
+
+const Idea = () => {
+  const router = useRouter();
+
+  return (
+    <section className="w-full site-x">
+      <div className="mx-auto grid w-full max-w-[1120px] gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+        <article className="rounded-[26px] bg-[linear-gradient(135deg,#109ae9,#0d85db)] p-7 text-white shadow-[0_22px_48px_rgba(18,132,214,0.22)]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/20 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em]">
+            List your time
+          </span>
+          <h3 className="mt-4 font-[Outfit,sans-serif] text-3xl font-bold leading-tight tracking-[-0.04em] sm:text-4xl">
+            Turn Your Passion Into Experiences
+          </h3>
+          <p className="mt-4 max-w-[420px] text-sm leading-7 text-white/85">
+            Share workshops, walks, food stories, or creative sessions and grow your local community while earning per slot.
+          </p>
+
+          <ul className="mt-5 space-y-2 text-sm text-white/90">
+            <li>Host meaningful experiences</li>
+            <li>Earn with each session</li>
+            <li>Build your local community</li>
+          </ul>
+
+          <button
+            onClick={() => router.push("/become-host")}
+            className="mt-6 rounded-full border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/25"
+          >
+            List Time
+          </button>
+        </article>
+
+        <article className="rounded-3xl border border-[#aeddf89e] bg-white p-5 shadow-[0_14px_32px_rgba(77,140,190,0.08)]">
+          <h3 className="text-base font-bold text-[#16304c]">The Idea Behind MySlotMate</h3>
+          <p className="mt-1 text-sm text-[#6f8daa]">Book time with interesting people near you.</p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {[
+              {
+                title: "Real People",
+                copy: "Vetted community for safety and authenticity.",
+                icon: "/assets/home/real.svg",
+              },
+              {
+                title: "Right Fit",
+                copy: "Find moments aligned to your mood and energy.",
+                icon: "/assets/home/Icon.svg",
+              },
+              {
+                title: "Book Fast",
+                copy: "Secure your slot in seconds with smooth checkout.",
+                icon: "/assets/home/spark.svg",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-2xl bg-[#f7fcff] p-4 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#0094CA1A]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.icon} alt={item.title} className="h-5 w-5" />
                 </div>
-                <div className="flex flex-col md:flex-row items-center justify-around text-center">
-                    <div className="flex flex-col items-center justify-center">
-                        <div className="flex items-center justify-center h-[4rem] w-[4rem] bg-[#0094CA1A] rounded-full p-2">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/assets/home/real.svg" alt="Real People" /></div>
-                        <h1 className="text-lg font-semibold">Real People</h1>
-                        <p className="text-[#6B7280]">Our community is vetted to ensure safety and authenticity for every experience</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center">
-                        <div className="flex items-center justify-center h-[4rem] w-[4rem] bg-[#0094CA1A] rounded-full p-2">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/assets/home/Icon.svg" alt="Right Fit" /></div>   
-                        <h1 className="text-lg font-semibold">Right Fit</h1>
-                        <p className="text-[#6B7280]">Don&apos;t just book a slot, book a moment. Find what feels right for you today.</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center">
-                        <div className="flex items-center justify-center h-[4rem] w-[4rem] bg-[#0094CA1A] rounded-full p-2">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/assets/home/spark.svg" alt="Book Now" /></div>
-                        <h1>Book Now</h1>
-                        <p className="text-[#6B7280]">Secure your slot in seconds with our seamless and secure checkout process.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
+                <h4 className="mt-2 text-sm font-bold text-[#16304c]">{item.title}</h4>
+                <p className="mt-1 text-xs leading-5 text-[#6f8daa]">{item.copy}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+};
 
 export default Idea;
