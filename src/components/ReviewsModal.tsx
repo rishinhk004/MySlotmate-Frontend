@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { type ReviewDTO } from "~/lib/api";
 import { FaStar } from "react-icons/fa";
-import { useUserProfile } from "~/hooks/useApi";
-import { useAddReplyToReview } from "~/hooks/useApi";
+import { FiX } from "react-icons/fi";
+import { useUserProfile, useAddReplyToReview } from "~/hooks/useApi";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -19,7 +19,6 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-/** Compute a human-readable "time ago" string from an ISO date */
 function timeAgo(isoDate: string): string {
   const diff = Date.now() - new Date(isoDate).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -34,7 +33,6 @@ function timeAgo(isoDate: string): string {
   return `${months} month${months > 1 ? "s" : ""} ago`;
 }
 
-/** Derive a sentiment label from the AI sentiment_score */
 function sentimentLabel(score: number | null): {
   text: string;
   color: string;
@@ -56,7 +54,6 @@ function ReviewCard({ review, hostId, currentHostId }: { review: ReviewDTO; host
   const reviewerName = reviewer?.name ?? review.name ?? "Anonymous Reviewer";
   const reviewerAvatar = reviewer?.avatar_url ?? "/assets/home/avatar-placeholder.png";
 
-  // Check if current user is the host of this event
   const isCurrentUserHost = hostId && currentHostId && hostId === currentHostId;
 
   const handleReplySubmit = () => {
@@ -159,48 +156,63 @@ function ReviewCard({ review, hostId, currentHostId }: { review: ReviewDTO; host
   );
 }
 
-export default function RatingsSection({
-  avg_rating,
-  total_reviews,
+export function ReviewsModal({
+  isOpen,
+  onClose,
   reviews,
+  avg_rating,
   hostId,
   eventHostId,
-  onReadAllReviews,
 }: {
-  avg_rating: number;
-  total_reviews: number;
+  isOpen: boolean;
+  onClose: () => void;
   reviews: ReviewDTO[];
+  avg_rating: number;
   hostId?: string;
   eventHostId?: string;
-  onReadAllReviews?: () => void;
 }) {
+  if (!isOpen) return null;
+
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-      <h3 className="text-lg font-bold text-gray-900">Ratings</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 p-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">All Reviews</h2>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-lg font-bold text-[#0094CA]">{avg_rating}</span>
+              <span className="text-sm text-gray-500">/ 5.0</span>
+              <StarRating rating={avg_rating} />
+              <span className="text-sm text-gray-500 ml-2">({reviews.length} reviews)</span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition"
+          >
+            <FiX size={20} />
+          </button>
+        </div>
 
-      {/* Overall */}
-      <div className="mt-4 flex items-end gap-2">
-        <span className="text-3xl font-bold text-[#0094CA]">
-          {avg_rating}
-        </span>
-        <span className="mb-1 text-sm text-gray-500">/ 5.0</span>
-        <StarRating rating={avg_rating} />
+        {/* Reviews list */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {reviews.length > 0 ? (
+            <div>
+              {reviews.map((review) => (
+                <ReviewCard 
+                  key={review.id} 
+                  review={review} 
+                  hostId={hostId}
+                  currentHostId={eventHostId}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-8">No reviews yet</p>
+          )}
+        </div>
       </div>
-
-      {/* Reviews list - Show only first 4 reviews */}
-      <div className="mt-4">
-        {reviews.slice(0, 4).map((r) => (
-          <ReviewCard key={r.id} review={r} hostId={hostId} currentHostId={eventHostId} />
-        ))}
-      </div>
-
-      {/* Read All */}
-      <button 
-        onClick={onReadAllReviews}
-        className="mt-4 w-full rounded-full border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-[#0094CA] hover:text-[#0094CA]"
-      >
-        Read all {total_reviews} reviews
-      </button>
     </div>
   );
 }

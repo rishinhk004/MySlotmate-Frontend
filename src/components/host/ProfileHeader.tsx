@@ -91,13 +91,14 @@ export default function ProfileHeader({
           View Live Experiences
           <HiArrowRight className="h-4 w-4" />
         </button>
-        <button 
+        {/* Write a Review button commented out */}
+        {/* <button 
           onClick={onWriteReview}
           className="flex items-center gap-2 rounded-full border-2 border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 transition hover:border-[#0094CA] hover:text-[#0094CA]"
         >
           <FiMessageSquare className="h-4 w-4" />
           Write a Review
-        </button>
+        </button> */}
       </div>
     </div>
   );

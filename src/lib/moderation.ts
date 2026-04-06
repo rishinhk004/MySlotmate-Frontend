@@ -311,7 +311,7 @@ function analyzePatterns(text: string): ModerationResult {
 
   return {
     score,
-    isBlocked: score >= 3,
+    isBlocked: score > 3,
     categories,
     flaggedKeywords: Array.from(flaggedKeywords),
     details: `Detected ${flaggedKeywords.size} malicious keyword(s) across ${
@@ -334,7 +334,7 @@ export async function analyzeContent(text: string): Promise<ModerationResult> {
   }
 
   // If Gemini API is configured and score is borderline/high (2-7), use AI for deeper analysis
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? process.env.GEMINI_API_KEY;
   if (apiKey && patternResult.score >= 2) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
@@ -384,7 +384,7 @@ Respond with a JSON object containing:
       const aiResult: GeminiResponse = JSON.parse(jsonMatch[0]);
 
       const riskLevel = aiResult.riskLevel ?? patternResult.score;
-      const isBlocked = typeof riskLevel === "number" && riskLevel >= 3;
+      const isBlocked = typeof riskLevel === "number" && riskLevel > 3;
 
       return {
         score: Math.min(10, Math.max(1, riskLevel)),

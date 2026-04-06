@@ -12,6 +12,7 @@ import {
   ExperiencesList,
 } from "~/components/host";
 import { Navbar, Breadcrumb } from "~/components";
+import { ReviewsModal } from "~/components/ReviewsModal";
 import { ReviewModal } from "~/components/activities";
 import {
   usePublicHostProfile,
@@ -31,6 +32,7 @@ export default function HostProfilePage({
   const [user] = useAuthState(auth);
   const experiencesRef = useRef<HTMLDivElement>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
 
   const { data: host, isLoading: hostLoading } = usePublicHostProfile(_hostId);
   const { data: events } = useEventsByHost(_hostId);
@@ -81,8 +83,7 @@ export default function HostProfilePage({
   };
 
   const handleReadAllReviews = () => {
-    // For now, scroll to ratings section
-    // Could be extended to show a modal with all reviews
+    setShowAllReviewsModal(true);
   };
 
   if (hostLoading || !host) {
@@ -116,7 +117,7 @@ export default function HostProfilePage({
         <ProfileHeader 
           host={host} 
           onViewExperiences={handleViewExperiences}
-          onWriteReview={handleWriteReview}
+          // onWriteReview={handleWriteReview}
         />
 
         {/* Gallery */}
@@ -175,6 +176,16 @@ export default function HostProfilePage({
           userId={user.uid}
         />
       )}
+
+      {/* Reviews Modal */}
+      <ReviewsModal
+        isOpen={showAllReviewsModal}
+        onClose={() => setShowAllReviewsModal(false)}
+        reviews={reviews}
+        avg_rating={host.avg_rating ?? 0}
+        hostId={currentUserHost?.id}
+        eventHostId={_hostId}
+      />
     </main>
   );
 }

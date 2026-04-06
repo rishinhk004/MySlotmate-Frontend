@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { HostNavbar } from "~/components/host-dashboard";
 import Breadcrumb from "~/components/Breadcrumb";
 import { useMyHost, useCreateEvent, useUploadFiles, usePublishEvent } from "~/hooks/useApi";
 import { useContentModeration } from "~/hooks/useContentModeration";
+import { useSuggestions } from "~/hooks/useSuggestions";
+import { SuggestionChips } from "~/components/SuggestionChips";
 import { FiArrowLeft, FiArrowRight, FiUpload, FiX, FiCheck, FiMapPin, FiClock, FiUsers, FiCalendar, FiDollarSign, FiShare2, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 import { toast } from "sonner";
 
@@ -141,7 +144,7 @@ function ImageUpload({
       {/* Single image preview */}
       {!multiple && preview && (
         <div className="relative inline-block">
-          <img src={preview} alt="Preview" className="w-full max-w-xs h-40 object-cover rounded-lg" />
+          <Image src={preview} alt="Preview" width={320} height={160} className="w-full max-w-xs h-40 object-cover rounded-lg" />
           <button
             type="button"
             onClick={onRemove}
@@ -157,7 +160,7 @@ function ImageUpload({
         <div className="flex flex-wrap gap-2 mb-2">
           {previews.map((p, i) => (
             <div key={i} className="relative">
-              <img src={p} alt={`Gallery ${i + 1}`} className="w-20 h-20 object-cover rounded-lg" />
+              <Image src={p} alt={`Gallery ${i + 1}`} width={80} height={80} className="w-20 h-20 object-cover rounded-lg" />
               <button
                 type="button"
                 onClick={() => onRemoveMultiple?.(i)}
@@ -230,7 +233,7 @@ function PreviewCard({ form }: { form: FormData }) {
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
       <div className="relative">
         {form.coverImagePreview ? (
-          <img src={form.coverImagePreview} alt="Preview" className="w-full h-40 object-cover" />
+          <Image src={form.coverImagePreview} alt="Preview" width={400} height={160} className="w-full h-40 object-cover" />
         ) : (
           <div className="w-full h-40 bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center">
             <span className="text-gray-400 text-sm">No image uploaded</span>
@@ -329,12 +332,16 @@ function SuccessModal({
 export default function CreateExperiencePage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
-  const [hostId, setHostId] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdEventId, setCreatedEventId] = useState<string>("");
+
+  // Suggestion states
+  const titleSuggestions = useSuggestions();
+  const hookSuggestions = useSuggestions();
+  const descriptionSuggestions = useSuggestions();
 
   const [form, setForm] = useState<FormData>({
     title: "",
@@ -364,7 +371,6 @@ export default function CreateExperiencePage() {
 
   useEffect(() => {
     setUserId(localStorage.getItem("msm_user_id"));
-    setHostId(localStorage.getItem("msm_host_id"));
     setIsHydrated(true);
   }, []);
 
@@ -658,12 +664,27 @@ export default function CreateExperiencePage() {
                 <input
                   type="text"
                   value={form.title}
-                  onChange={(e) => updateForm("title", e.target.value)}
+                  onChange={(e) => {
+                    updateForm("title", e.target.value);
+                    void titleSuggestions.generateSuggestions(e.target.value, "title");
+                  }}
+                  onBlur={() => titleSuggestions.clearSuggestions()}
                   placeholder="e.g., Morning Yoga by the Beach"
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
                   maxLength={100}
                 />
                 <p className="text-xs text-gray-400">{form.title.length}/100 characters</p>
+                {titleSuggestions.suggestions.length > 0 && (
+                  <SuggestionChips
+                    suggestions={titleSuggestions.suggestions}
+                    isLoading={titleSuggestions.isLoading}
+                    onSelect={(suggestion) => {
+                      updateForm("title", suggestion);
+                      titleSuggestions.clearSuggestions();
+                    }}
+                    onDismiss={titleSuggestions.clearSuggestions}
+                  />
+                )}
               </div>
 
               {/* Hook Line */}
@@ -674,12 +695,29 @@ export default function CreateExperiencePage() {
                 <input
                   type="text"
                   value={form.hookLine}
-                  onChange={(e) => updateForm("hookLine", e.target.value)}
+                  onChange={(e) => {
+                    updateForm("hookLine", e.target.value);
+                    void hookSuggestions.generateSuggestions(e.target.value, "hookLine", {
+                      title: form.title,
+                    });
+                  }}
+                  onBlur={() => hookSuggestions.clearSuggestions()}
                   placeholder="A short catchy phrase to attract guests"
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
                   maxLength={150}
                 />
                 <p className="text-xs text-gray-400">{form.hookLine.length}/150 characters</p>
+                {hookSuggestions.suggestions.length > 0 && (
+                  <SuggestionChips
+                    suggestions={hookSuggestions.suggestions}
+                    isLoading={hookSuggestions.isLoading}
+                    onSelect={(suggestion) => {
+                      updateForm("hookLine", suggestion);
+                      hookSuggestions.clearSuggestions();
+                    }}
+                    onDismiss={hookSuggestions.clearSuggestions}
+                  />
+                )}
               </div>
 
               {/* Mood Selector */}
@@ -692,7 +730,15 @@ export default function CreateExperiencePage() {
                 </label>
                 <textarea
                   value={form.description}
-                  onChange={(e) => handleDescriptionChange(e.target.value)}
+                  onChange={(e) => {
+                    handleDescriptionChange(e.target.value);
+                    void descriptionSuggestions.generateSuggestions(e.target.value, "description", {
+                      title: form.title,
+                      hookLine: form.hookLine,
+                      mood: form.mood,
+                    });
+                  }}
+                  onBlur={() => descriptionSuggestions.clearSuggestions()}
                   placeholder="Describe what guests will experience, what they'll learn, and what makes your experience special..."
                   rows={5}
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none resize-none"
@@ -710,6 +756,18 @@ export default function CreateExperiencePage() {
                     <FiAlertTriangle size={16} className="shrink-0" />
                     <span>{descriptionWarning}</span>
                   </div>
+                )}
+                {descriptionSuggestions.suggestions.length > 0 && (
+                  <SuggestionChips
+                    suggestions={descriptionSuggestions.suggestions}
+                    isLoading={descriptionSuggestions.isLoading}
+                    onSelect={(suggestion) => {
+                      const newText = form.description + " " + suggestion;
+                      handleDescriptionChange(newText);
+                      descriptionSuggestions.clearSuggestions();
+                    }}
+                    onDismiss={descriptionSuggestions.clearSuggestions}
+                  />
                 )}
               </div>
 
