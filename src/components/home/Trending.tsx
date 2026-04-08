@@ -15,26 +15,38 @@ interface TrendingCardProps {
   duration: string;
   mood: string;
 }
-
 const TrendingCard = ({ id, title, imageUrl, pricing, duration, mood }: TrendingCardProps) => {
   return (
     <Link
       href={`/experience/${id}`}
-      className="shrink-0 snap-start overflow-hidden rounded-[28px] border border-[#b8dbf39c] bg-[#f8fcff] shadow-[0_16px_34px_rgba(72,128,173,0.1)] transition hover:-translate-y-1"
+      // Added w-[260px] to match the PeopleCard width for consistency
+      className="group shrink-0 snap-start w-[260px] overflow-hidden rounded-[28px] border border-[#b8dbf39c] bg-[#f8fcff] shadow-[0_16px_34px_rgba(72,128,173,0.1)] transition hover:-translate-y-1"
     >
-      <div className="relative h-[226px] w-[272px] overflow-hidden">
+      {/* Changed fixed h/w to aspect-square w-full */}
+      <div className="relative aspect-square w-full overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl || "/assets/home/hiking.jpg"} alt={title} className="h-full w-full object-cover" />
-        <span className="absolute left-3 top-3 rounded-full bg-[#f5fbff] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#0e8ae0]">
+        <img 
+          src={imageUrl || "/assets/home/hiking.jpg"} 
+          alt={title} 
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+        />
+        <span className="absolute left-3 top-3 z-10 rounded-full bg-[#f5fbff]/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#0e8ae0] shadow-sm">
           {mood}
         </span>
       </div>
-      <div className="space-y-1.5 px-4 pb-5 pt-4">
-        <h3 className="line-clamp-2 text-[22px] font-bold leading-[1.1] tracking-[-0.03em] text-[#16304c]">{title}</h3>
-        <p className="text-sm text-[#6f8daa]">Curated local session</p>
-        <div className="mt-2 flex items-center justify-between text-xs font-bold text-[#5e88ab]">
+
+      {/* Adjusted padding and spacing for better balance in a square layout */}
+      <div className="flex flex-col justify-between space-y-2 px-5 pb-6 pt-5">
+        <div>
+          <h3 className="line-clamp-2 min-h-[48px] text-[20px] font-bold leading-[1.2] tracking-[-0.03em] text-[#16304c]">
+            {title}
+          </h3>
+          <p className="mt-1 text-xs font-medium text-[#6f8daa]">Curated local session</p>
+        </div>
+        
+        <div className="mt-2 flex items-center justify-between border-t border-[#aeddf847] pt-3 text-[11px] font-bold text-[#5e88ab]">
           <span>{duration}</span>
-          <span>{pricing} / slot</span>
+          <span className="text-[#0e8ae0]">{pricing} / slot</span>
         </div>
       </div>
     </Link>

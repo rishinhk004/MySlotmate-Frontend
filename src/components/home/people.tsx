@@ -20,19 +20,36 @@ interface PeopleCardProps {
   description: string;
   isVerified?: boolean;
 }
-
-const PeopleCard = ({ id, name, imageUrl, rating, headline, description, isVerified }: PeopleCardProps) => {
+const PeopleCard = ({
+  id,
+  name,
+  imageUrl,
+  rating,
+  headline,
+  description,
+  isVerified,
+}: PeopleCardProps) => {
   return (
     <Link
       href={`/host/${id}`}
-      className="shrink-0 snap-start overflow-hidden rounded-[28px] border border-[#b8dbf39c] bg-[#f8fcff] shadow-[0_16px_34px_rgba(72,128,173,0.1)] transition hover:-translate-y-1"
+      // Added w-[260px] to keep the card width consistent
+      className="group shrink-0 snap-start w-[260px] overflow-hidden rounded-[28px] border border-[#d6ebf7cc] bg-white shadow-[0_16px_34px_rgba(72,128,173,0.08)] transition hover:-translate-y-1"
     >
-      <div className="relative h-[286px] w-[272px] overflow-hidden">
+      {/* Changed h-[272px] w-[272px] to aspect-square w-full */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-[28px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl || "/assets/home/people1.png"} alt={name} className="h-full w-full object-cover" />
+        <img
+          src={imageUrl || "/assets/home/people1.png"}
+          alt={name}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         {isVerified ? (
-          <span className="absolute bottom-3 right-3 rounded-full bg-[#0094CA] p-1.5 text-white">
-            <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+          <span className="absolute bottom-3 right-3 z-10 rounded-full bg-[#0094CA] p-1.5 text-white shadow-sm">
+            <svg
+              className="h-3.5 w-3.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
               <path
                 fillRule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -43,11 +60,21 @@ const PeopleCard = ({ id, name, imageUrl, rating, headline, description, isVerif
         ) : null}
       </div>
 
-      <div className="space-y-1.5 px-4 pb-5 pt-4">
-        <p className="line-clamp-1 text-[11px] font-extrabold uppercase tracking-[0.09em] text-[#3f89c3]">{headline}</p>
-        <p className="line-clamp-1 text-4xl font-bold leading-[1] tracking-[-0.03em] text-[#16304c]">{name}</p>
-        <p className="line-clamp-2 text-sm leading-7 text-[#6f8daa]">{description}</p>
-        <div className="pt-0.5 text-xs font-bold text-[#5e88ab]">Rating {rating}</div>
+      <div className="space-y-1.5 px-5 pb-6 pt-4">
+        <p className="line-clamp-1 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[#3f89c3]">
+          {headline}
+        </p>
+        <p className="line-clamp-1 text-2xl font-bold leading-tight tracking-[-0.03em] text-[#16304c]">
+          {name}
+        </p>
+        <p className="line-clamp-2 min-h-[40px] text-xs leading-relaxed text-[#6f8daa]">
+          {description}
+        </p>
+        <div className="flex items-center justify-between pt-1">
+           <span className="text-[11px] font-bold text-[#5e88ab]">
+             Rating {rating}
+           </span>
+        </div>
       </div>
     </Link>
   );
@@ -89,7 +116,12 @@ const People = ({ currentHostId }: { currentHostId?: string | null }) => {
         );
 
         const distance = hostCity
-          ? calculateDistance(location.lat, location.lng, hostCity.lat, hostCity.lng)
+          ? calculateDistance(
+              location.lat,
+              location.lng,
+              hostCity.lat,
+              hostCity.lng,
+            )
           : Number.POSITIVE_INFINITY;
 
         return { host, distance };
@@ -146,7 +178,10 @@ const People = ({ currentHostId }: { currentHostId?: string | null }) => {
           </div>
         </div>
 
-        <div ref={cardsViewportRef} className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 hide-scrollbar">
+        <div
+          ref={cardsViewportRef}
+          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 hide-scrollbar"
+        >
           {isLoading ? (
             <div className="flex w-full items-center justify-center py-12">
               <LuLoader2 className="h-8 w-8 animate-spin text-[#0094CA]" />
@@ -164,7 +199,10 @@ const People = ({ currentHostId }: { currentHostId?: string | null }) => {
                 imageUrl={host.avatar_url ?? "/assets/home/people1.png"}
                 rating={(host.avg_rating ?? 4.5).toFixed(1)}
                 headline={(host.tagline ?? "Local Host").toUpperCase()}
-                description={host.bio ?? "Sharing meaningful experiences and thoughtful local sessions."}
+                description={
+                  host.bio ??
+                  "Sharing meaningful experiences and thoughtful local sessions."
+                }
                 isVerified={host.is_identity_verified}
               />
             ))
@@ -172,7 +210,10 @@ const People = ({ currentHostId }: { currentHostId?: string | null }) => {
         </div>
 
         <div className="mt-5 md:hidden">
-          <Link href="/hosts" className="text-sm font-extrabold text-[#0e8ae0] hover:text-[#0b6eb1]">
+          <Link
+            href="/hosts"
+            className="text-sm font-extrabold text-[#0e8ae0] hover:text-[#0b6eb1]"
+          >
             View All
           </Link>
         </div>

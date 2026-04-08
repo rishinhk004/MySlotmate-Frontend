@@ -1,7 +1,7 @@
-﻿"use client";
+﻿﻿"use client";
 
 import Link from "next/link";
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Camera, Clock3, Mountain, Palette, Star, Users } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -204,11 +204,7 @@ const formatStat = (value: number, target: number) => {
   return Math.round(value).toString();
 };
 
-interface ShowcaseSectionsProps {
-  afterFeaturedSlot?: ReactNode;
-}
-
-const ShowcaseSections = ({ afterFeaturedSlot }: ShowcaseSectionsProps) => {
+const ShowcaseSections = () => {
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [storyIndex, setStoryIndex] = useState(0);
   const [communityIndex, setCommunityIndex] = useState(0);
@@ -599,8 +595,6 @@ const ShowcaseSections = ({ afterFeaturedSlot }: ShowcaseSectionsProps) => {
           </div>
         </div>
       </section>
-
-      {afterFeaturedSlot}
 
       <section className="w-full border-y border-[#aeddf847] bg-[linear-gradient(180deg,#edf8ff,#f7fcff)] site-x">
         <div className="mx-auto grid w-full max-w-[1120px] gap-10 py-14 lg:grid-cols-[0.92fr_1.08fr]">

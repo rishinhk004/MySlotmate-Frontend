@@ -13,18 +13,23 @@ interface HostCardProps {
   city: string;
   isVerified?: boolean;
 }
-
 const HostCard = ({ id, name, imageUrl, rating, city, isVerified }: HostCardProps) => {
   return (
     <Link
       href={`/host/${id}`}
-      className="shrink-0 snap-start overflow-hidden rounded-[28px] border border-[#b8dbf39c] bg-[#f8fcff] shadow-[0_16px_34px_rgba(72,128,173,0.1)] transition hover:-translate-y-1"
+      // Added w-[260px] to match the other sections
+      className="group shrink-0 snap-start w-[260px] overflow-hidden rounded-[28px] border border-[#b8dbf39c] bg-[#f8fcff] shadow-[0_16px_34px_rgba(72,128,173,0.1)] transition hover:-translate-y-1"
     >
-      <div className="relative h-[286px] w-[272px] overflow-hidden">
+      {/* Changed h-[286px] w-[272px] to aspect-square w-full */}
+      <div className="relative aspect-square w-full overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl || "/assets/home/people1.png"} alt={name} className="h-full w-full object-cover" />
+        <img 
+          src={imageUrl || "/assets/home/people1.png"} 
+          alt={name} 
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
+        />
         {isVerified ? (
-          <span className="absolute bottom-3 right-3 rounded-full bg-[#0094CA] p-1.5 text-white">
+          <span className="absolute bottom-3 right-3 z-10 rounded-full bg-[#0094CA] p-1.5 text-white shadow-sm">
             <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -35,16 +40,27 @@ const HostCard = ({ id, name, imageUrl, rating, city, isVerified }: HostCardProp
           </span>
         ) : null}
       </div>
-      <div className="space-y-1.5 px-4 pb-5 pt-4">
-        <p className="line-clamp-1 text-[11px] font-extrabold uppercase tracking-[0.09em] text-[#3f89c3]">{city}</p>
-        <h3 className="line-clamp-1 text-4xl font-bold leading-[1] tracking-[-0.03em] text-[#16304c]">{name}</h3>
-        <p className="text-sm text-[#6f8daa]">Find experiences, connect, and spend meaningful time.</p>
-        <p className="pt-0.5 text-xs font-bold uppercase tracking-[0.08em] text-[#4b94c8]">Rating {rating}</p>
+
+      <div className="space-y-1.5 px-5 pb-6 pt-5">
+        <p className="line-clamp-1 text-[10px] font-extrabold uppercase tracking-[0.09em] text-[#3f89c3]">
+          {city}
+        </p>
+        {/* Adjusted from text-4xl to text-2xl for better fit */}
+        <h3 className="line-clamp-1 text-2xl font-bold leading-tight tracking-[-0.03em] text-[#16304c]">
+          {name}
+        </h3>
+        <p className="line-clamp-2 min-h-[32px] text-xs leading-relaxed text-[#6f8daa]">
+          Find experiences, connect, and spend meaningful time.
+        </p>
+        <div className="pt-2">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#4b94c8]">
+            Rating {rating}
+          </span>
+        </div>
       </div>
     </Link>
   );
 };
-
 const AllHosts = ({ currentHostId }: { currentHostId?: string | null }) => {
   const [mounted, setMounted] = useState(false);
   const cardsViewportRef = useRef<HTMLDivElement>(null);

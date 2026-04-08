@@ -263,27 +263,22 @@ export default function HomePage() {
         </div>
 
         <div className="scroll-fade w-full">
+          <components.Home.ShowcaseSections />
 
-          <components.Home.ShowcaseSections
-            afterFeaturedSlot={
-              <>
-                <div ref={filterBarRef} className="w-full site-x">
-                  <div className="mx-auto flex w-full max-w-[1120px] justify-start">
-                    {mounted ? <FilterBar /> : null}
-                  </div>
-                </div>
-                <div id="hosts" className="w-full">
-                  <components.Home.people currentHostId={hostId} />
-                </div>
-                <div className="w-full">
-                  <components.Home.Trending />
-                </div>
-                <div className="w-full">
-                  <components.Home.AllHosts currentHostId={hostId} />
-                </div>
-              </>
-            }
-          />
+          <div id="hosts" className="w-full">
+            <components.Home.people currentHostId={hostId} />
+          </div>
+          <div ref={filterBarRef} className="w-full site-x">
+            <div className="mx-auto flex w-full max-w-[1120px] justify-start">
+              {mounted ? <FilterBar /> : null}
+            </div>
+          </div>
+          <div className="w-full">
+            <components.Home.Trending />
+          </div>
+          <div className="w-full">
+            <components.Home.AllHosts currentHostId={hostId} />
+          </div>
         </div>
 
         <div className="scroll-fade flex w-full flex-col gap-14">
