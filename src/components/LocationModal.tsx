@@ -14,8 +14,6 @@ export interface CityLocation {
   lng: number;
 }
 
-
-
 // Comprehensive database of Indian cities with coordinates
 export const POPULAR_CITIES: CityLocation[] = [
   // Top metros
@@ -190,48 +188,48 @@ export default function LocationModal({
     debounceRef.current = setTimeout(() => {
       void (async () => {
         try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(search)}&format=json&addressdetails=1&limit=8&countrycodes=in`,
-          { headers: { "User-Agent": "MySlotMate/1.0" } },
-        );
-        const data = (await res.json()) as {
-          lat?: string;
-          lon?: string;
-          address?: {
-            city?: string;
-            town?: string;
-            village?: string;
-            state_district?: string;
-            county?: string;
-            state?: string;
-          };
-          display_name?: string;
-        }[];
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(search)}&format=json&addressdetails=1&limit=8&countrycodes=in`,
+            { headers: { "User-Agent": "MySlotMate/1.0" } },
+          );
+          const data = (await res.json()) as {
+            lat?: string;
+            lon?: string;
+            address?: {
+              city?: string;
+              town?: string;
+              village?: string;
+              state_district?: string;
+              county?: string;
+              state?: string;
+            };
+            display_name?: string;
+          }[];
 
-        const seen = new Set<string>();
-        const results: CityLocation[] = [];
-        for (const item of data) {
-          const addr = item.address;
-          if (!addr) continue;
-          const city =
-            addr.city ?? addr.town ?? addr.village ?? addr.state_district ?? addr.county;
-          if (!city) continue;
-          const key = `${city}-${addr.state ?? ""}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          results.push({ 
-            city, 
-            state: addr.state ?? "",
-            lat: parseFloat(item.lat ?? "0"),
-            lng: parseFloat(item.lon ?? "0")
-          });
+          const seen = new Set<string>();
+          const results: CityLocation[] = [];
+          for (const item of data) {
+            const addr = item.address;
+            if (!addr) continue;
+            const city =
+              addr.city ?? addr.town ?? addr.village ?? addr.state_district ?? addr.county;
+            if (!city) continue;
+            const key = `${city}-${addr.state ?? ""}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            results.push({
+              city,
+              state: addr.state ?? "",
+              lat: parseFloat(item.lat ?? "0"),
+              lng: parseFloat(item.lon ?? "0")
+            });
+          }
+          setSearchResults(results);
+        } catch {
+          setSearchResults([]);
+        } finally {
+          setSearching(false);
         }
-        setSearchResults(results);
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
-      }
       })();
     }, 400);
 
@@ -263,127 +261,137 @@ export default function LocationModal({
   // Decide which list to show
   const showSearchResults = search.trim().length >= 2 && searchResults.length > 0;
 
+  // Separate featured cities for the top row
+  const FEATURED_NAMES = ["Ahmedabad", "Chennai", "Delhi", "Goa", "Kolkata", "Mumbai", "Hyderabad"];
+  const featuredCities = filteredPopular.filter(c => FEATURED_NAMES.includes(c.city));
+  const moreCities = filteredPopular.filter(c => !FEATURED_NAMES.includes(c.city)).sort((a, b) => a.city.localeCompare(b.city));
+
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/40"
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-all"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="fixed inset-x-4 top-[10%] z-50 mx-auto max-w-md rounded-2xl bg-white shadow-2xl sm:inset-x-auto sm:w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b px-5 py-4">
-          <h2 className="text-lg font-bold text-gray-900">Select Location</h2>
+      {/* Modal Container */}
+      <div className="fixed left-1/2 top-1/2 z-50 w-[95%] max-w-[800px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[38px] bg-white p-8 shadow-[0_24px_60px_rgba(0,0,0,0.15)]">
+        
+        {/* Header & Close */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[#16304c]">Select Location</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 transition"
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
             <FiX className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Search */}
-        <div className="px-5 pt-4">
-          <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 focus-within:border-[#0094CA] focus-within:ring-1 focus-within:ring-[#0094CA]/30 transition">
-            <FiSearch className="h-4 w-4 text-gray-400" />
+        <div className="max-h-[75vh] overflow-y-auto pr-2 custom-scrollbar">
+          {/* Search Bar */}
+          <div className="mt-5">
             <input
               ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search for your city..."
-              className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 outline-none"
+              placeholder="Search city, area or locality"
+              className="w-full rounded-xl border border-[#aeddf873] bg-white px-5 py-3 text-sm text-[#16304c] placeholder-[#5e88ab] outline-none transition focus:ring-2 focus:ring-[#0094CA]/20"
             />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <FiX className="h-4 w-4" />
-              </button>
+          </div>
+
+          {/* Current Location Action */}
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={detectLocation}
+              disabled={detecting}
+              className="flex items-center gap-2 text-sm font-semibold text-[#0094CA] transition hover:text-[#007ba8] disabled:opacity-60"
+            >
+              <LuLocateFixed className={`h-4 w-4 ${detecting ? "animate-spin" : ""}`} />
+              {detecting ? "Detecting location…" : "Use Current Location"}
+            </button>
+            {current && (
+              <span className="text-xs text-[#5e88ab]">
+                Current: <strong className="text-[#16304c]">{current.city}</strong>
+              </span>
             )}
           </div>
-        </div>
-
-        {/* Detect location button */}
-        <button
-          onClick={detectLocation}
-          disabled={detecting}
-          className="mx-5 mt-3 flex w-[calc(100%-2.5rem)] items-center gap-2.5 rounded-xl border border-[#0094CA]/20 bg-[#e6f8ff] px-4 py-3 text-sm font-semibold text-[#0094CA] transition hover:bg-[#d0f0ff] disabled:opacity-60"
-        >
-          <LuLocateFixed className={`h-5 w-5 ${detecting ? "animate-spin" : ""}`} />
-          {detecting ? "Detecting location…" : "Use my current location"}
-        </button>
-
-        {/* Current location indicator */}
-        {current && (
-          <div className="mx-5 mt-2 flex items-center gap-2 text-xs text-gray-500">
-            <IoLocationSharp className="h-3.5 w-3.5 text-[#0094CA]" />
-            Current: <span className="font-medium text-gray-700">{current.city}, {current.state}</span>
-          </div>
-        )}
-
-        {/* City list */}
-        <div className="mt-3 max-h-[45vh] overflow-y-auto px-5 pb-5">
-          {!showSearchResults && (
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Popular Cities
-            </p>
-          )}
 
           {showSearchResults ? (
-            /* Search results from Nominatim */
-            <div className="grid grid-cols-2 gap-2">
-              {searchResults.map((loc) => (
-                <button
-                  key={`${loc.city}-${loc.state}`}
-                  onClick={() => handleSelect(loc)}
-                  className={`flex flex-col items-start rounded-xl border px-3 py-2.5 text-left transition hover:border-[#0094CA] hover:bg-[#e6f8ff] ${
-                    current?.city === loc.city && current?.state === loc.state
-                      ? "border-[#0094CA] bg-[#e6f8ff]"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <span className="text-sm font-semibold text-gray-900">{loc.city}</span>
-                  <span className="text-[11px] text-gray-500">{loc.state}</span>
-                </button>
-              ))}
+            /* Nominatim API Search Results */
+            <div className="mt-8">
+              <h3 className="text-sm font-bold text-[#16304c]">Search Results</h3>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {searchResults.map((loc) => (
+                  <button
+                    key={`${loc.city}-${loc.state}`}
+                    onClick={() => handleSelect(loc)}
+                    className="flex flex-col items-start rounded-xl border border-[#aeddf873] p-3 text-left transition hover:border-[#0094CA] hover:bg-[#f0f9ff]"
+                  >
+                    <span className="text-sm font-bold text-[#16304c]">{loc.city}</span>
+                    <span className="text-xs text-[#5e88ab] line-clamp-1">{loc.state}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
-            /* Popular cities grid */
-            <div className="grid grid-cols-3 gap-2">
-              {filteredPopular.map((loc) => (
-                <button
-                  key={`${loc.city}-${loc.state}`}
-                  onClick={() => handleSelect(loc)}
-                  className={`flex flex-col items-center rounded-xl border px-2 py-3 text-center transition hover:border-[#0094CA] hover:bg-[#e6f8ff] ${
-                    current?.city === loc.city && current?.state === loc.state
-                      ? "border-[#0094CA] bg-[#e6f8ff]"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <IoLocationSharp className="mb-1 h-5 w-5 text-[#0094CA]" />
-                  <span className="text-xs font-semibold text-gray-900">{loc.city}</span>
-                  <span className="text-[10px] text-gray-400">{loc.state}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            <>
+              {/* Popular Cities Section (Featured) */}
+              {featuredCities.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-sm font-bold text-[#16304c]">Popular Cities</h3>
+                  <div className="mt-5 grid grid-cols-4 gap-4 sm:grid-cols-7">
+                    {featuredCities.map((loc) => (
+                      <button
+                        key={loc.city}
+                        onClick={() => handleSelect(loc)}
+                        className="group flex flex-col items-center gap-3"
+                      >
+                        <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] border border-[#aeddf873] bg-[#f8fcff] transition-all group-hover:border-[#0094CA] group-hover:bg-[#f0f9ff] group-hover:shadow-[0_8px_20px_rgba(0,148,202,0.1)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`/assets/home/${loc.city.toLowerCase()}.svg`}
+                            alt={loc.city}
+                            className="h-10 w-10 object-contain opacity-80 transition-opacity group-hover:opacity-100"
+                          />
+                        </div>
+                        <span className="text-[12px] font-bold text-[#16304c]">{loc.city}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {searching && (
-            <p className="mt-3 text-center text-xs text-gray-400">Searching…</p>
-          )}
+              {/* More Cities Section (List) */}
+              {moreCities.length > 0 && (
+                <div className="mt-10">
+                  <h3 className="text-sm font-bold text-[#16304c]">More Cities</h3>
+                  <div className="mt-5 grid grid-cols-3 gap-y-3 text-[12px] font-medium text-[#5e88ab] sm:grid-cols-4 md:grid-cols-6">
+                    {moreCities.map((loc) => (
+                      <button
+                        key={loc.city}
+                        onClick={() => handleSelect(loc)}
+                        className="text-left transition-colors hover:text-[#0094CA]"
+                      >
+                        {loc.city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {search.trim().length >= 2 &&
-            !searching &&
-            searchResults.length === 0 &&
-            filteredPopular.length === 0 && (
-              <p className="mt-3 text-center text-sm text-gray-500">
-                No cities found for &ldquo;{search}&rdquo;
-              </p>
-            )}
+              {searching && (
+                <p className="mt-8 text-center text-sm text-[#5e88ab]">Searching...</p>
+              )}
+
+              {search.trim().length >= 2 && !searching && searchResults.length === 0 && filteredPopular.length === 0 && (
+                <p className="mt-8 text-center text-sm text-[#5e88ab]">
+                  No cities found for &ldquo;{search}&rdquo;
+                </p>
+              )}
+            </>
+          )}
         </div>
       </div>
     </>
