@@ -142,7 +142,7 @@ const WAY_CARDS = [
     title: "Simple moments",
     desc: "Tea, music, and mindful time.",
     tag: "WELLNESS",
-    video: "https://res.cloudinary.com/dhry5xscm/video/upload/v1775498035/Wellness_wqkjtt.mov",
+    video: "https://res.cloudinary.com/dhry5xscm/video/upload/v1775762349/WhatsApp_Video_2026-04-10_at_12.47.41_AM_rqlq4f.mp4",
     image:
       "https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=900&q=80",
     icon: Camera,
@@ -617,6 +617,7 @@ const ShowcaseSections = () => {
         <div className="mx-auto w-full max-w-[1120px] py-14">
           <div className="mx-auto mb-8 max-w-[760px] text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#4a8ab8]">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               Explore Experiences
             </span>
             <h2 className="mt-3 font-[Outfit,sans-serif] text-4xl font-bold tracking-[-0.04em] text-[#16304c] sm:text-5xl">
@@ -674,6 +675,7 @@ const ShowcaseSections = () => {
         <div className="mx-auto w-full max-w-[1120px] py-14">
           <div className="mx-auto mb-8 max-w-[760px] text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#4a8ab8]">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               How it works
             </span>
             <h2 className="mt-3 font-[Outfit,sans-serif] text-4xl font-bold tracking-[-0.04em] text-[#16304c] sm:text-5xl">
@@ -709,7 +711,7 @@ const ShowcaseSections = () => {
       <section className="w-full site-x">
         <div className="mx-auto w-full max-w-[1120px] pb-14">
           <div className="grid gap-5 rounded-[28px] border border-[#aeddf885] bg-white p-4 shadow-[0_18px_42px_rgba(60,121,175,0.10)] md:grid-cols-[1.03fr_0.97fr] md:items-center">
-            <div className="relative mx-auto aspect-square w-full max-w-[360px] overflow-hidden rounded-3xl">
+            <div className="relative mx-auto aspect-square w-full max-w-[460px] overflow-hidden rounded-3xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={featured.image} alt={featured.title} className="h-full w-full object-cover" />
               <div className="absolute bottom-4 left-4 rounded-2xl bg-[#12334fc2] px-3 py-2 text-white backdrop-blur-sm">
@@ -720,6 +722,7 @@ const ShowcaseSections = () => {
 
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#4a8ab8]">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
                 Featured Experience
               </span>
               <h3 className="mt-3 font-[Outfit,sans-serif] text-3xl font-bold tracking-[-0.04em] text-[#16304c] sm:text-4xl">
@@ -843,6 +846,7 @@ const ShowcaseSections = () => {
 
           <div className="pt-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#4a8ab8]">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
               Host Story
             </span>
             <h3 className="mt-3 font-[Outfit,sans-serif] text-3xl font-bold tracking-[-0.04em] text-[#16304c] sm:text-4xl">

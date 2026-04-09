@@ -125,7 +125,7 @@ const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
   };
 
   return (
-    <section className="relative pt-4 z-0 w-full site-x">
+    <section className="relative pt-4 pb-20 z-0 w-full site-x">
       <div className="mx-auto grid w-full max-w-[1120px] gap-8 py-8 md:py-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-10">
         <div className="space-y-4">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#4a8ab8]">
@@ -176,15 +176,15 @@ const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
         <div className="relative min-h-[420px] overflow-visible rounded-[38px] md:min-h-[520px]">
           <div className="absolute inset-x-2 bottom-4 top-8 rounded-[38px] border border-[#aeddf899] bg-[linear-gradient(180deg,#e8f6ff,#f8fcff)] shadow-[0_24px_60px_rgba(58,119,172,0.12)]" />
 
-          <div className={`absolute inset-x-4 bottom-8 top-12 z-10 overflow-visible md:inset-x-6 md:bottom-10 md:top-14 ${isPageLoaded ? "hero-stack-ready" : ""}`}>
-            <div className="hero-stack-in absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 md:left-[18%] md:top-[2%] md:translate-x-0 md:translate-y-0">
+          <div className={`absolute inset-x-1 bottom-8 top-12 z-10 overflow-visible md:inset-x-6 md:bottom-10 md:top-14 ${isPageLoaded ? "hero-stack-ready" : ""}`}>
+            <div className="hero-stack-in absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 md:left-[10%] md:top-[2%] md:translate-x-0 md:translate-y-0">
               <div className="hero-stack-drop">
                 <div className="-translate-x-3 -translate-y-14 -rotate-[7deg] md:translate-x-0 md:translate-y-0 md:-rotate-[7deg]">
                   <HeroCard {...cardData[0]!} />
                 </div>
               </div>
             </div>
-            <div className="hero-stack-in hero-stack-in-2 absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 md:left-[49%] md:top-[16%] md:translate-x-0 md:translate-y-0">
+            <div className="hero-stack-in hero-stack-in-2 absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 md:left-[41%] md:top-[16%] md:translate-x-0 md:translate-y-0">
               <div className="hero-stack-drop">
                 <div className="translate-x-4 -translate-y-2 rotate-[3deg] md:translate-x-0 md:translate-y-0 md:rotate-[3deg]">
                   <HeroCard {...cardData[1]!} />
@@ -198,7 +198,7 @@ const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
                 </div>
               </div>
             </div>
-            <div className="hero-stack-in hero-stack-in-4 absolute left-1/2 top-1/2 z-40 -translate-x-1/2 -translate-y-1/2 md:left-[37%] md:top-[56%] md:translate-x-0 md:translate-y-0">
+            <div className="hero-stack-in hero-stack-in-4 absolute left-1/2 top-1/2 z-40 -translate-x-1/2 -translate-y-1/2 md:left-[30%] md:top-[56%] md:translate-x-0 md:translate-y-0">
               <div className="hero-stack-drop">
                 <div className="translate-x-6 translate-y-8 rotate-[6deg] md:translate-x-0 md:translate-y-0 md:rotate-[6deg]">
                   <HeroCard {...cardData[3]!} />
