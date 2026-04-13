@@ -153,7 +153,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/home/logo.png" alt="Myslotmate" className="h-10 w-auto" />
+            <img src="/assets/home/logo.png" alt="Myslotmate" loading="lazy" className="h-10 w-auto" />
           </Link>
 
           {/* Desktop center nav (matches reference nav styles) */}
@@ -222,6 +222,7 @@ export default function Navbar() {
                   <img
                     src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
                     alt={user.displayName ?? "Profile"}
+                    loading="lazy"
                     className="h-8 w-8 rounded-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -264,6 +265,7 @@ export default function Navbar() {
                       <img
                         src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
                         alt=""
+                        loading="lazy"
                         className="h-14 w-14 rounded-full object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -540,6 +542,7 @@ export default function Navbar() {
                   <img
                     src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
                     alt=""
+                    loading="lazy"
                     className="h-10 w-10 rounded-full object-cover"
                     referrerPolicy="no-referrer"
                   />

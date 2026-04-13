@@ -164,7 +164,7 @@ const Hero: React.FC<HeroProps> = ({ filterBarRef }) => {
               {["/assets/home/profile1.png", "/assets/home/profile2.png", "/assets/home/profile3.png"].map((img, idx) => (
                 <div key={img} className="h-11 w-11 overflow-hidden rounded-full border-4 border-[#f7fbff] shadow-[0_10px_22px_rgba(84,140,191,0.08)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={`Community ${idx + 1}`} className="h-full w-full object-cover" />
+                  <img src={img} alt={`Community ${idx + 1}`} loading="lazy" className="h-full w-full object-cover" />
                 </div>
               ))}
               <div className="flex h-11 w-11 items-center justify-center rounded-full border-4 border-[#f7fbff] bg-[#f1f3f6] text-[10px] font-bold text-[#2b2d33] shadow-[0_10px_22px_rgba(84,140,191,0.08)]">

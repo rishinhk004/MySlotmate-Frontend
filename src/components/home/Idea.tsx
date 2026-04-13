@@ -57,7 +57,7 @@ const Idea = () => {
               <div key={item.title} className="rounded-2xl bg-[#f7fcff] p-4 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#0094CA1A]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.icon} alt={item.title} className="h-5 w-5" />
+                  <img src={item.icon} alt={item.title} loading="lazy" className="h-5 w-5" />
                 </div>
                 <h4 className="mt-2 text-sm font-bold text-[#16304c]">{item.title}</h4>
                 <p className="mt-1 text-xs leading-5 text-[#6f8daa]">{item.copy}</p>

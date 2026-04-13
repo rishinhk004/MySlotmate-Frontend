@@ -157,7 +157,7 @@ function ImageUpload({
       {/* Single image preview */}
       {!multiple && preview && (
         <div className="relative inline-block">
-          <Image src={preview} alt="Preview" width={320} height={160} className="w-full max-w-xs h-40 object-cover rounded-lg" />
+          <Image src={preview} alt="Preview" width={320} height={160} loading="lazy" className="w-full max-w-xs h-40 object-cover rounded-lg" />
           <button
             type="button"
             onClick={onRemove}
@@ -173,7 +173,7 @@ function ImageUpload({
         <div className="flex flex-wrap gap-2 mb-2">
           {previews.map((p, i) => (
             <div key={i} className="relative">
-              <Image src={p} alt={`Gallery ${i + 1}`} width={80} height={80} className="w-20 h-20 object-cover rounded-lg" />
+              <Image src={p} alt={`Gallery ${i + 1}`} width={80} height={80} loading="lazy" className="w-20 h-20 object-cover rounded-lg" />
               <button
                 type="button"
                 onClick={() => onRemoveMultiple?.(i)}
@@ -246,7 +246,7 @@ function PreviewCard({ form }: { form: FormData }) {
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
       <div className="relative">
         {form.coverImagePreview ? (
-          <Image src={form.coverImagePreview} alt="Preview" width={400} height={160} className="w-full h-40 object-cover" />
+          <Image src={form.coverImagePreview} alt="Preview" width={400} height={160} loading="lazy" className="w-full h-40 object-cover" />
         ) : (
           <div className="w-full h-40 bg-linear-to-br from-gray-100 to-gray-200 flex items-center justify-center">
             <span className="text-gray-400 text-sm">No image uploaded</span>

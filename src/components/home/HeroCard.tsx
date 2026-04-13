@@ -16,6 +16,7 @@ const HeroCard = ({ photo, type, title, description, duration }: CardProps) => {
       <img
         src={photo}
         alt={title}
+        loading="lazy"
         className="h-36 w-full rounded-2xl object-cover sm:h-40"
       />
 

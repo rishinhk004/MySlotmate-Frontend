@@ -36,6 +36,7 @@ const ExperienceCard = ({
         <img
           src={imageUrl || "/assets/home/hiking.jpg"}
           alt={title}
+          loading="lazy"
           className="h-[190px] w-full object-cover"
         />
         {mood ? (

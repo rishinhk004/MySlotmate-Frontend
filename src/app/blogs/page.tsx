@@ -120,13 +120,16 @@ const BlogCard = ({ post }: BlogCardProps) => {
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
       <div
-        className="w-full h-48 bg-gray-200"
-        style={{
-          backgroundImage: `url(${post.image})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
+        className=\"w-full h-48 bg-gray-200 overflow-hidden\"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={post.image}
+          alt={post.title}
+          loading=\"lazy\"
+          className=\"w-full h-full object-cover\"
+        />
+      </div>
 
       <div className="p-5">
         <div className="flex items-center gap-2 mb-3">

@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "~/components/Navbar";
+import Breadcrumb from "~/components/Breadcrumb";
 import { Footer } from "~/components/home";
 import {
   useEvent,
@@ -43,35 +44,70 @@ function PhotoGallery({
   onShowAll: () => void;
 }) {
   const images = coverImage ? [coverImage, ...(gallery ?? [])] : (gallery ?? []);
-  const displayImages = images.slice(0, 5);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  if (displayImages.length === 0) {
+  if (images.length === 0) {
     return (
-      <div className="bg-gray-200 h-80 rounded-xl flex items-center justify-center">
+      <div className="bg-gray-200 h-96 rounded-xl flex items-center justify-center">
         <span className="text-gray-500">No photos available</span>
       </div>
     );
   }
 
+  const handlePrev = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
   return (
-    <div className="relative">
-      <div className="grid grid-cols-4 grid-rows-2 gap-2 h-80 rounded-xl overflow-hidden">
-        {/* Main large image */}
-        <div className="col-span-2 row-span-2">
-          <img
-            src={displayImages[0]}
-            alt="Experience cover"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {/* Secondary images */}
-        {displayImages.slice(1, 5).map((img, i) => (
-          <div key={i} className="col-span-1 row-span-1">
-            <img src={img} alt={`Gallery ${i + 2}`} className="w-full h-full object-cover" />
-          </div>
-        ))}
+    <div className="relative group">
+      <div className="relative h-96 rounded-xl overflow-hidden bg-gray-100">
+        {/* Main Image */}
+        <img
+          src={images[currentImageIndex]}
+          alt={`Experience gallery ${currentImageIndex + 1}`}
+          loading="lazy"
+          className="w-full h-full object-cover transition-opacity duration-300"
+        />
+
+        {/* Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            {/* Left Arrow */}
+            <button
+              onClick={handlePrev}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-3 rounded-full shadow-lg transition opacity-0 group-hover:opacity-100 z-10"
+              aria-label="Previous image"
+            >
+              <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Right Arrow */}
+            <button
+              onClick={handleNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-3 rounded-full shadow-lg transition opacity-0 group-hover:opacity-100 z-10"
+              aria-label="Next image"
+            >
+              <svg className="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Image Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition">
+              {currentImageIndex + 1} / {images.length}
+            </div>
+          </>
+        )}
       </div>
-      {images.length > 5 && (
+
+      {/* Show All Photos Button */}
+      {images.length > 1 && (
         <button
           onClick={onShowAll}
           className="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transition"
@@ -106,7 +142,7 @@ function InfoPills({
   };
 
   return (
-    <div className="flex flex-wrap gap-6 py-4 border-b border-gray-100">
+    <div className="flex flex-wrap gap-6 py-6 px-4 md:px-6 border-b border-gray-100 bg-gradient-to-r from-blue-50/30 to-transparent rounded-lg mb-6">
       <div className="flex items-center gap-2">
         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
           <FiClock className="text-[#0094CA]" size={18} />
@@ -182,7 +218,7 @@ function BookingWidget({
   const eventHasPassed = _eventDate ? new Date(_eventDate) < new Date() : false;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm sticky top-24">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm sticky top-20 h-max">
       {/* Price and Rating */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -334,8 +370,8 @@ function MeetYourHost({
   if (!host) return null;
 
   return (
-    <div className="py-6 border-b border-gray-100">
-      <h2 className="text-xl font-bold mb-4">Meet your host</h2>
+    <div className="py-8 px-4 md:px-6 border-b border-gray-100 rounded-lg bg-gradient-to-r from-blue-50/20 to-transparent mb-6">
+      <h2 className="text-2xl font-bold mb-6">Meet your host</h2>
       <div className="flex gap-4">
         <div className="flex-shrink-0">
           {host.avatar_url ? (
@@ -389,8 +425,8 @@ function MeetYourHost({
 function WhereWellMeet({ location, isOnline, meetingLink, googleMapsUrl }: { location: string | null; isOnline: boolean; meetingLink?: string | null; googleMapsUrl?: string | null }) {
   if (isOnline) {
     return (
-      <div className="py-6 border-b border-gray-100">
-        <h2 className="text-xl font-bold mb-4">Where we&apos;ll meet</h2>
+      <div className="py-8 px-4 md:px-6 border-b border-gray-100 rounded-lg bg-gradient-to-r from-blue-50/20 to-transparent mb-6">
+        <h2 className="text-2xl font-bold mb-6">Where we&apos;ll meet</h2>
         <div className="bg-gray-100 rounded-xl p-6 flex items-center justify-center">
           <div className="text-center">
             <div className="text-4xl mb-2">🌐</div>
@@ -413,8 +449,8 @@ function WhereWellMeet({ location, isOnline, meetingLink, googleMapsUrl }: { loc
   }
 
   return (
-    <div className="py-6 border-b border-gray-100">
-      <h2 className="text-xl font-bold mb-4">Where we&apos;ll meet</h2>
+    <div className="py-8 px-4 md:px-6 border-b border-gray-100 rounded-lg bg-gradient-to-r from-transparent to-blue-50/20 mb-6">
+      <h2 className="text-2xl font-bold mb-6">Where we&apos;ll meet</h2>
       <div className="bg-gray-200 rounded-xl h-48 flex items-center justify-center relative overflow-hidden">
         {/* Placeholder map */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100" />
@@ -476,8 +512,8 @@ function GuestReviews({
   ];
 
   return (
-    <div className="py-6">
-      <h2 className="text-xl font-bold mb-4">Guest Reviews</h2>
+    <div className="py-8 px-4 md:px-6 rounded-lg bg-gradient-to-r from-blue-50/20 to-transparent">
+      <h2 className="text-2xl font-bold mb-6">Guest Reviews</h2>
 
       {/* Rating Summary */}
       <div className="flex gap-8 mb-6">
@@ -689,22 +725,23 @@ export default function ExperienceDetailPage({
     <>
       <Navbar />
 
-      <main className="min-h-screen bg-white">
-        <div className="mx-auto w-full max-w-[1120px] site-x py-6">
+      <main className="min-h-screen bg-white pt-24">
+        <div className="mx-auto w-full max-w-[1120px] site-x py-8 px-4 md:px-6 lg:px-8">
           {/* Breadcrumb */}
-          <nav className="text-sm mb-4">
-            <Link href="/" className="text-gray-500 hover:text-gray-700">Home</Link>
-            <span className="mx-2 text-gray-400">/</span>
-            <span className="text-gray-500">Experiences</span>
-            <span className="mx-2 text-gray-400">/</span>
-            <span className="text-gray-900">{event.title ?? "Experience"}</span>
-          </nav>
+          <Breadcrumb 
+            items={[
+              { label: "Home", href: "/" }, 
+              { label: "Experiences", href: "/experiences" },
+              { label: event.title ?? "Experience" }
+            ]} 
+            className="mb-6" 
+          />
 
           {/* Title and Actions */}
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-6 mt-6">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{event.title}</h1>
-              <div className="flex items-center gap-4 mt-2 text-sm">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3">{event.title}</h1>
+              <div className="flex items-center gap-4 mt-3 text-sm flex-wrap">
                 <span className="flex items-center gap-1 text-gray-600">
                   <FiMapPin size={14} />
                   {event.is_online ? (
@@ -757,7 +794,7 @@ export default function ExperienceDetailPage({
           />
 
           {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-3 gap-8 mt-8">
+          <div className="grid lg:grid-cols-3 gap-8 mt-10">
             {/* Left Column - Details */}
             <div className="lg:col-span-2">
               <InfoPills
@@ -766,8 +803,8 @@ export default function ExperienceDetailPage({
               />
 
               {/* About the Experience */}
-              <div className="py-6 border-b border-gray-100">
-                <h2 className="text-xl font-bold mb-4">About the experience</h2>
+              <div className="py-8 px-4 md:px-6 border-b border-gray-100 bg-gradient-to-r from-transparent to-blue-50/20 rounded-lg mb-6">
+                <h2 className="text-2xl font-bold mb-4">About the experience</h2>
                 <p className="text-gray-600 whitespace-pre-line">
                   {event.description ?? "No description available."}
                 </p>
