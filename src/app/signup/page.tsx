@@ -123,6 +123,7 @@ export default function SignUpPage() {
             <img
               src="/assets/home/logomyslotmate.png"
               alt="MySlotMate"
+              loading="lazy"
               className="h-16 w-16 object-contain"
             />
           </div>
@@ -140,6 +141,7 @@ export default function SignUpPage() {
             <img
               src={user.photoURL ?? "/assets/home/avatar-placeholder.png"}
               alt=""
+              loading="lazy"
               className="h-10 w-10 rounded-full object-cover"
               referrerPolicy="no-referrer"
             />

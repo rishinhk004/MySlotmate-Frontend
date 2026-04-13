@@ -110,6 +110,7 @@ export default function SavedExperiencesPage() {
                   <img
                     src={event.cover_image_url ?? "/assets/home/placeholder.jpg"}
                     alt={event.title}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {/* Unsave Button Overlay */}

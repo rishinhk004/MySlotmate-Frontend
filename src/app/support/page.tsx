@@ -12,6 +12,7 @@ import {
   LuShieldAlert,
 } from "react-icons/lu";
 import { SupportPageShell } from "~/components/support";
+import Breadcrumb from "~/components/Breadcrumb";
 
 interface AssistCard {
   title: string;
@@ -121,6 +122,7 @@ export default function SupportPage() {
 
   return (
     <SupportPageShell>
+      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Support & Safety" }]} className="mb-6" />
       <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">

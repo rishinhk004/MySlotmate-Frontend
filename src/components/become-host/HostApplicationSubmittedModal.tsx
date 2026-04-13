@@ -42,6 +42,7 @@ export default function HostApplicationSubmittedModal({
             <img
               src="/assets/home/logomyslotmate.png"
               alt="Myslotmate"
+              loading="lazy"
               className="h-10 w-10 object-contain"
             />
           </div>

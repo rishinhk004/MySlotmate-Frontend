@@ -109,6 +109,7 @@ function ExperienceSummaryCard({
             <img
               src={event.cover_image_url}
               alt={event.title}
+              loading="lazy"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -144,6 +145,7 @@ function ExperienceSummaryCard({
                 <img
                   src={host.avatar_url}
                   alt={host.first_name}
+                  loading="lazy"
                   className="w-6 h-6 rounded-full object-cover"
                 />
               ) : (

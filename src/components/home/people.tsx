@@ -41,6 +41,7 @@ const PeopleCard = ({
         <img
           src={imageUrl || "/assets/home/people1.png"}
           alt={name}
+          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         {isVerified ? (

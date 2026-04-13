@@ -96,6 +96,7 @@ export default function GoogleLogin({ open, onClose }: GoogleLoginProps) {
               alt="MySlotMate"
               width={80}
               height={80}
+              loading="lazy"
               className="h-20 w-20 object-contain"
             />
           </div>

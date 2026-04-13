@@ -302,6 +302,7 @@ export default function HostProfileEditPage() {
                   <img
                     src={form.avatarUrl}
                     alt="Avatar"
+                    loading="lazy"
                     className="h-20 w-20 rounded-full border-2 border-gray-200 object-cover"
                   />
                 ) : (

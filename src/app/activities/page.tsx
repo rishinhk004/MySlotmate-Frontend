@@ -117,6 +117,7 @@ export default function ActivitiesPage() {
                     <img
                       src={event.cover_image_url ?? "/assets/home/placeholder.jpg"}
                       alt={event.title}
+                      loading="lazy"
                       className="w-full h-40 object-cover rounded-lg"
                     />
                   </div>

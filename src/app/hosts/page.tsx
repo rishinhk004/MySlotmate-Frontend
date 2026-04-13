@@ -37,6 +37,7 @@ const HostCard = ({
         <img
           src={imageUrl || "/assets/home/people1.png"}
           alt={name}
+          loading="lazy"
           className="h-[214px] w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <span className="absolute right-3 top-3 rounded-full bg-[#f5fbff] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#0e8ae0]">
