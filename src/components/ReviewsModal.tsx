@@ -78,6 +78,7 @@ function ReviewCard({ review, hostId, currentHostId }: { review: ReviewDTO; host
           <img
             src={reviewerAvatar}
             alt={reviewerName}
+            loading="lazy"
             className="h-8 w-8 rounded-full object-cover"
           />
           <div>

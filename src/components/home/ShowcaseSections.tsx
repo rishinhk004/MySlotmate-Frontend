@@ -87,6 +87,7 @@ const CuratedSessionCard = ({
         <img
           src={imageUrl || "/assets/home/hiking.jpg"}
           alt={title}
+          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
@@ -731,7 +732,7 @@ const ShowcaseSections = () => {
               {stepItems.map((step, idx) => (
                 <article key={step.title} className="relative z-10 text-center">
                   <div className="relative z-20 mx-auto mb-4 grid h-[74px] w-[74px] place-items-center rounded-full bg-[#0094CA] font-[Outfit,sans-serif] border-6 border-[#04b7f8] text-2xl font-bold text-white shadow-[0_16px_28px_rgba(31,167,255,0.2)]">
-                    <img src={STEPS_ICONS[idx]} alt={step.title} className="h-5 w-5" />
+                    <img src={STEPS_ICONS[idx]} alt={step.title} loading="lazy" className="h-5 w-5" />
                   </div>
                   <h3 className="text-base font-bold text-[#16304c]">{step.title}</h3>
                   <p className="mx-auto mt-1 max-w-[260px] text-sm text-[#6f8daa]">{step.desc}</p>
@@ -749,7 +750,7 @@ const ShowcaseSections = () => {
               <div className="grid gap-5 rounded-[28px] border border-[#aeddf885] bg-white p-4 shadow-[0_18px_42px_rgba(60,121,175,0.10)] md:grid-cols-[1.03fr_0.97fr] md:items-center">
                 <div className="relative mx-auto aspect-square w-full max-w-[460px] overflow-hidden rounded-3xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={featured.image} alt={featured.title} className="h-full w-full object-cover" />
+                  <img src={featured.image} alt={featured.title} loading="lazy" className="h-full w-full object-cover" />
                   <div className="absolute bottom-4 left-4 rounded-2xl bg-[#12334fc2] px-3 py-2 text-white backdrop-blur-sm">
                     <p className="text-sm font-semibold">{featured.overlayTitle}</p>
                     <p className="text-xs text-white/80">{featured.overlaySubtitle}</p>
@@ -902,16 +903,16 @@ const ShowcaseSections = () => {
       </section>
 
       <section className="w-full site-x">
-       <div className="mx-auto grid w-full max-w-[1120px] items-start gap-10 py-14 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="relative mx-auto mb-12 w-full max-w-[560px] h-[80%] aspect-square overflow-hidden rounded-[32px] shadow-[0_18px_42px_rgba(60,123,177,0.1)] lg:mb-0 lg:self-start">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={story.image} alt={story.title} className="h-full w-full object-cover" />
-            <div className="absolute bottom-5 left-5 right-5 rounded-[26px] bg-white px-6 py-5 shadow-[0_26px_44px_rgba(60,123,177,0.18)]">
-                <p className="font-[Outfit,sans-serif] text-[15px] italic text-[#1f7bb6]">
-                  &ldquo;{story.quote}&rdquo;
-                </p>
-                <span className="mt-3 block text-xs font-extrabold text-[#16304c]">- {story.author}</span>
-              </div>
+        <div className="mx-auto grid w-full max-w-[1120px] gap-10 py-14 lg:grid-cols-[0.92fr_1.08fr]">
+          <div className="relative mx-auto mb-12 w-full max-w-[560px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={story.image} alt={story.title} className="aspect-square w-full rounded-[32px] object-cover shadow-[0_18px_42px_rgba(60,123,177,0.1)]" />
+            <div className="absolute bottom-[-34px] left-1/2 w-[min(310px,calc(100%-40px))] -translate-x-1/2 rounded-[26px] bg-white px-6 py-5 shadow-[0_26px_44px_rgba(60,123,177,0.18)]">
+              <p className="font-[Outfit,sans-serif] text-[15px] italic text-[#1f7bb6]">
+                &ldquo;{story.quote}&rdquo;
+              </p>
+              <span className="mt-3 block text-xs font-extrabold text-[#16304c]">- {story.author}</span>
+            </div>
           </div>
 
            <div className="pt-2">
@@ -1014,6 +1015,7 @@ const ShowcaseSections = () => {
             <img
               src="https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1200&q=80"
               alt="Hosts creating an experience together"
+              loading="lazy"
               className="mt-5 aspect-[16/10] w-full rounded-3xl object-cover shadow-[0_18px_32px_rgba(10,86,148,0.24)]"
             />
             <p className="mt-4 text-sm leading-7 text-white/85">
@@ -1045,6 +1047,7 @@ const ShowcaseSections = () => {
                   key={`${img}-${idx}`}
                   src={img}
                   alt={`${community.label} moment ${idx + 1}`}
+                  loading="lazy"
                   className="aspect-square w-full rounded-2xl object-cover"
                 />
               ))}

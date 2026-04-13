@@ -142,6 +142,7 @@ function ExperienceCard({ event, hostId: _hostId, onResume: _onResume, isResumin
         <img
           src={event.cover_image_url ?? "/assets/home/cover.svg"}
           alt={event.title}
+          loading="lazy"
           className="w-full h-full object-cover"
         />
         <div className="absolute top-3 left-3">

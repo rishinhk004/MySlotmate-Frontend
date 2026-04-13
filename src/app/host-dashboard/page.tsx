@@ -297,6 +297,7 @@ export default function HostDashboardPage() {
                       <img
                         src={item.cover_image_url}
                         alt={item.title}
+                        loading="lazy"
                         className="h-28 w-40 shrink-0 rounded-lg object-cover hidden sm:block"
                       />
                     </>

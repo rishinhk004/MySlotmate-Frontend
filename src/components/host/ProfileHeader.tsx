@@ -41,6 +41,7 @@ export default function ProfileHeader({
           <img
             src={host.avatar_url ?? "/assets/home/avatar-placeholder.png"}
             alt={fullName}
+            loading="lazy"
             className="h-24 w-24 rounded-full border-4 border-white object-cover shadow-md"
           />
           {host.is_identity_verified && (

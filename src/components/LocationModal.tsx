@@ -353,6 +353,7 @@ export default function LocationModal({
                           <img
                             src={`/assets/home/${loc.city.toLowerCase()}.svg`}
                             alt={loc.city}
+                            loading="lazy"
                             className="h-10 w-10 object-contain opacity-80 transition-opacity group-hover:opacity-100"
                           />
                         </div>

@@ -28,6 +28,7 @@ const TrendingCard = ({ id, title, imageUrl, pricing, duration, mood }: Trending
         <img 
           src={imageUrl || "/assets/home/hiking.jpg"} 
           alt={title} 
+          loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" 
         />
         <span className="absolute left-3 top-3 z-10 rounded-full bg-[#f5fbff]/90 backdrop-blur-sm px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#0e8ae0] shadow-sm">

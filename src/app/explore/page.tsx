@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import * as components from "~/components";
 import { useListHosts, useListPublicEvents } from "~/hooks/useApi";
 import { getSavedLocation, type CityLocation } from "~/components/LocationModal";
+import Breadcrumb from "~/components/Breadcrumb";
 
 type ExplorePill = "All" | "Adventure" | "Creative" | "Food" | "Wellness";
 
@@ -172,6 +173,7 @@ export default function ExplorePage() {
       <components.Navbar />
 
       <div className="mx-auto w-full max-w-[77.5rem] site-x py-8 pt-24">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Explore" }]} className="mb-6" />
         <section className="pb-2">
           <div className="flex h-[54px] items-center gap-3 rounded-full border border-sky-200 bg-white/90 px-4 shadow-[0_10px_24px_rgba(74,141,194,0.08)]">
             <Search className="h-[18px] w-[18px] text-[#6f8daa]" />
@@ -297,6 +299,7 @@ export default function ExplorePage() {
                     <img
                       src={host.avatar_url ?? "/assets/home/people1.png"}
                       alt={fullName}
+                      loading="lazy"
                       className="h-[214px] w-full object-cover"
                     />
                     <div className="p-4">
@@ -362,6 +365,7 @@ export default function ExplorePage() {
                       <img
                         src={event.cover_image_url ?? "/assets/home/hiking.jpg"}
                         alt={event.title}
+                        loading="lazy"
                         className="h-[190px] w-full object-cover"
                       />
                       {event.mood ? (

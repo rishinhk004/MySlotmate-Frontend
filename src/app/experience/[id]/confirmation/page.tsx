@@ -92,6 +92,7 @@ function ConfirmationContent({ eventId }: { eventId: string }) {
                 <img
                   src={event.cover_image_url}
                   alt={event.title}
+                  loading="lazy"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -117,8 +118,7 @@ function ConfirmationContent({ eventId }: { eventId: string }) {
                 {host?.avatar_url ? (
                   <img
                     src={host.avatar_url}
-                    alt={host.first_name}
-                    className="w-6 h-6 rounded-full object-cover"
+                    alt={host.first_name}                    loading="lazy"                    className="w-6 h-6 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-6 h-6 rounded-full bg-[#0094CA] flex items-center justify-center text-white text-xs font-bold">

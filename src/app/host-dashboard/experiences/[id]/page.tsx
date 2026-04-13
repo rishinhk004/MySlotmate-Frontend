@@ -102,7 +102,7 @@ function ImageUpload({
       {!multiple && preview && (
         <div className="relative inline-block">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="Preview" className="w-full max-w-xs h-40 object-cover rounded-lg" />
+          <img src={preview} alt="Preview" loading="lazy" className="w-full max-w-xs h-40 object-cover rounded-lg" />
           <button
             type="button"
             onClick={onRemove}
@@ -118,7 +118,7 @@ function ImageUpload({
           {previews.map((p, i) => (
             <div key={i} className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p} alt={`Gallery ${i + 1}`} className="w-20 h-20 object-cover rounded-lg" />
+              <img src={p} alt={`Gallery ${i + 1}`} loading="lazy" className="w-20 h-20 object-cover rounded-lg" />
               <button
                 type="button"
                 onClick={() => onRemoveMultiple?.(i)}

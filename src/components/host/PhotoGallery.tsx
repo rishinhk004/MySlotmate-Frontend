@@ -12,6 +12,7 @@ export default function PhotoGallery({ images }: { images: string[] }) {
           <img
             src={img}
             alt={`Gallery ${i + 1}`}
+            loading="lazy"
             className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
           />
         </div>

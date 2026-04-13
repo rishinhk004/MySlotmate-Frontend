@@ -9,7 +9,7 @@ const Banner = () => {
       <div className="mx-auto grid w-full max-w-[1120px] gap-6 rounded-[28px] border border-[#aeddf885] bg-white p-4 shadow-[0_18px_42px_rgba(60,121,175,0.10)] md:grid-cols-[1.02fr_0.98fr] md:items-center md:p-5">
         <div className="relative mx-auto w-full max-w-[360px] overflow-hidden rounded-3xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/home/cover.svg" alt="Featured experience" className="h-full w-full object-cover" />
+          <img src="/assets/home/cover.svg" alt="Featured experience" loading="lazy" className="h-full w-full object-cover" />
           <div className="absolute bottom-4 left-4 rounded-2xl bg-[#12334fc2] px-3 py-2 text-white backdrop-blur-sm">
             <p className="text-sm font-semibold">Featured Hosts</p>
             <p className="text-xs text-white/80">Stories, workshops, and city walks</p>

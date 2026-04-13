@@ -64,6 +64,7 @@ export default function Preloader() {
             <img
               src="/assets/navbar/roundlogo.png"
               alt="M logo"
+              loading="lazy"
               className="h-24 w-24 md:h-32 md:w-32 object-contain drop-shadow-lg rounded-full transform-gpu"
               style={{ animation: "logoFloat 2.6s ease-in-out infinite" }}
             />

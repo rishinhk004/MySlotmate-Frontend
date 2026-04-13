@@ -51,6 +51,7 @@ function ExperienceCard({ event }: { event: EventDTO }) {
         <img
           src={event.cover_image_url ?? "/assets/home/placeholder.png"}
           alt={event.title}
+          loading="lazy"
           className="h-full w-full object-cover"
         />
         {/* Price badge */}
