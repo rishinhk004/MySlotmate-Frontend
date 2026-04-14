@@ -47,7 +47,6 @@ export const POPULAR_CITIES: CityLocation[] = [
   { city: "Surat", state: "Gujarat", lat: 21.1458, lng: 72.8479 },
   { city: "Ranchi", state: "Jharkhand", lat: 23.3441, lng: 85.3096 },
   { city: "Srinagar", state: "Jammu & Kashmir", lat: 34.0837, lng: 74.7973 },
-  { city: "Thiruvananthapuram", state: "Kerala", lat: 8.5241, lng: 76.9366 },
   { city: "Mysore", state: "Karnataka", lat: 12.2958, lng: 76.6394 },
   { city: "Shimla", state: "Himachal Pradesh", lat: 31.7724, lng: 77.1092 },
   { city: "Manali", state: "Himachal Pradesh", lat: 32.2396, lng: 77.1887 },
