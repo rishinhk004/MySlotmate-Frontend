@@ -112,7 +112,7 @@ const Footer = () => {
 
           <div className="mt-8 flex flex-col items-center justify-between border-t border-[#aeddf873] pt-4 text-center text-sm text-[#000000] md:flex-row md:text-left">
             <p>MADE WITH &#x2764; FOR THE CURIOUS</p>
-            <div className="flex flex-row items-center justify-center gap-3">
+            <div className="mt-3 flex flex-row items-center justify-center gap-3 md:mt-0">
               <a
                 href="https://www.instagram.com/myslotmate/"
                 target="_blank"
