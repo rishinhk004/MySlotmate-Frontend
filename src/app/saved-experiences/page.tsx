@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSavedExperiences, useListPublicEvents, useUnsaveExperience } from "~/hooks/useApi";
+import {
+  useSavedExperiences,
+  useListPublicEvents,
+  useUnsaveExperience,
+} from "~/hooks/useApi";
 import { type EventDTO } from "~/lib/api";
 import * as components from "~/components";
 import { FiBookmark, FiTrash2, FiMapPin, FiDollarSign } from "react-icons/fi";
@@ -28,12 +32,15 @@ export default function SavedExperiencesPage() {
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("msm_user_id");
-    setUserId(storedUserId && storedUserId !== "existing" ? storedUserId : null);
+    setUserId(
+      storedUserId && storedUserId !== "existing" ? storedUserId : null,
+    );
     setIsHydrated(true);
   }, []);
 
   // Fetch user's saved experiences
-  const { data: savedExperiences, isLoading: savedLoading } = useSavedExperiences(userId);
+  const { data: savedExperiences, isLoading: savedLoading } =
+    useSavedExperiences(userId);
 
   // Fetch all public events to get event details
   const { data: allEvents } = useListPublicEvents();
@@ -71,7 +78,7 @@ export default function SavedExperiencesPage() {
           onError: () => {
             setRemovingId(null);
           },
-        }
+        },
       );
     } catch {
       setRemovingId(null);
@@ -82,13 +89,19 @@ export default function SavedExperiencesPage() {
     <main className="min-h-screen bg-white">
       <components.Navbar />
 
-      <div className="mx-auto w-full max-w-[1120px] site-x py-8 pt-24">
-        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Saved Experiences" }]} className="mb-6" />
+      <div className="site-x mx-auto w-full max-w-[1120px] py-8">
+        <Breadcrumb
+          items={[{ label: "Home", href: "/" }, { label: "Saved Experiences" }]}
+          className="mb-6"
+        />
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Saved Experiences</h1>
-          <p className="text-gray-600 mt-2">
-            {savedWithEvents.length} {savedWithEvents.length === 1 ? "experience" : "experiences"} saved
+          <h1 className="text-3xl font-bold text-gray-900">
+            Saved Experiences
+          </h1>
+          <p className="mt-2 text-gray-600">
+            {savedWithEvents.length}{" "}
+            {savedWithEvents.length === 1 ? "experience" : "experiences"} saved
           </p>
         </div>
 
@@ -98,26 +111,28 @@ export default function SavedExperiencesPage() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0094CA] border-t-transparent" />
           </div>
         ) : savedWithEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {savedWithEvents.map(({ saved, event }) => (
               <div
                 key={saved.id}
-                className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow group"
+                className="group overflow-hidden rounded-lg border border-gray-200 transition-shadow hover:shadow-lg"
               >
                 {/* Image Container */}
-                <div className="relative overflow-hidden bg-gray-200 aspect-video">
+                <div className="relative aspect-video overflow-hidden bg-gray-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={event.cover_image_url ?? "/assets/home/placeholder.jpg"}
+                    src={
+                      event.cover_image_url ?? "/assets/home/placeholder.jpg"
+                    }
                     alt={event.title}
                     loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   {/* Unsave Button Overlay */}
                   <button
                     onClick={() => handleUnsave(event.id)}
                     disabled={removingId === event.id}
-                    className="absolute top-3 right-3 bg-white text-red-600 p-2.5 rounded-full shadow-md hover:bg-red-50 transition disabled:opacity-50"
+                    className="absolute top-3 right-3 rounded-full bg-white p-2.5 text-red-600 shadow-md transition hover:bg-red-50 disabled:opacity-50"
                     title="Remove from saved"
                   >
                     {removingId === event.id ? (
@@ -128,27 +143,27 @@ export default function SavedExperiencesPage() {
                   </button>
                   {/* Badge */}
                   {event.mood && (
-                    <div className="absolute top-3 left-3 bg-[#0094CA] text-white px-2 py-1 rounded-full text-xs font-medium">
+                    <div className="absolute top-3 left-3 rounded-full bg-[#0094CA] px-2 py-1 text-xs font-medium text-white">
                       {event.mood}
                     </div>
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="p-4 flex flex-col justify-between h-48">
+                <div className="flex h-48 flex-col justify-between p-4">
                   {/* Title and Description */}
                   <div>
                     <Link href={`/experience/${event.id}`}>
-                      <h3 className="font-semibold text-gray-900 hover:text-[#0094CA] transition line-clamp-2">
+                      <h3 className="line-clamp-2 font-semibold text-gray-900 transition hover:text-[#0094CA]">
                         {event.title}
                       </h3>
                     </Link>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                    <p className="mt-1 line-clamp-2 text-sm text-gray-600">
                       {event.hook_line ?? event.description?.substring(0, 60)}
                     </p>
 
                     {/* Info */}
-                    <div className="flex items-center gap-4 mt-3 text-sm">
+                    <div className="mt-3 flex items-center gap-4 text-sm">
                       {event.location && (
                         <div className="flex items-center gap-1 text-gray-600">
                           <FiMapPin className="h-4 w-4 text-[#0094CA]" />
@@ -165,7 +180,7 @@ export default function SavedExperiencesPage() {
                   {/* CTA Button */}
                   <Link
                     href={`/experience/${event.id}`}
-                    className="mt-4 w-full px-4 py-2 bg-[#0094CA] text-white rounded-lg hover:bg-[#0076a3] transition font-medium text-center text-sm"
+                    className="mt-4 w-full rounded-lg bg-[#0094CA] px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-[#0076a3]"
                   >
                     View Experience
                   </Link>
@@ -176,15 +191,16 @@ export default function SavedExperiencesPage() {
         ) : isHydrated ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="mb-4">
-              <FiBookmark className="h-12 w-12 text-gray-300 mx-auto" />
+              <FiBookmark className="mx-auto h-12 w-12 text-gray-300" />
             </div>
-            <p className="text-lg text-gray-600 mb-4">No saved experiences</p>
-            <p className="text-gray-500 mb-6 max-w-sm">
-              Start exploring and save your favorite experiences to view them later.
+            <p className="mb-4 text-lg text-gray-600">No saved experiences</p>
+            <p className="mb-6 max-w-sm text-gray-500">
+              Start exploring and save your favorite experiences to view them
+              later.
             </p>
             <Link
               href="/experiences"
-              className="px-6 py-2 bg-[#0094CA] text-white rounded-lg hover:bg-[#0076a3] transition font-medium"
+              className="rounded-lg bg-[#0094CA] px-6 py-2 font-medium text-white transition hover:bg-[#0076a3]"
             >
               Explore Experiences
             </Link>

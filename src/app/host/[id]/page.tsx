@@ -103,19 +103,19 @@ export default function HostProfilePage({
     <main className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="mx-auto w-full max-w-[1120px] site-x py-8 pt-24">
-        <Breadcrumb 
+      <div className="site-x mx-auto w-full max-w-[1120px] py-8">
+        <Breadcrumb
           items={[
-            { label: "Home", href: "/" }, 
+            { label: "Home", href: "/" },
             { label: "Hosts", href: "/hosts" },
-            { label: fullName }
-          ]} 
-          className="mb-6" 
+            { label: fullName },
+          ]}
+          className="mb-6"
         />
 
         {/* Profile Header */}
-        <ProfileHeader 
-          host={host} 
+        <ProfileHeader
+          host={host}
           onViewExperiences={handleViewExperiences}
           // onWriteReview={handleWriteReview}
         />
