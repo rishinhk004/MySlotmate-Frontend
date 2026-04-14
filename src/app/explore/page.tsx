@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import * as components from "~/components";
 import { useListHosts, useListPublicEvents } from "~/hooks/useApi";
-import { getSavedLocation, type CityLocation } from "~/components/LocationModal";
+import {
+  getSavedLocation,
+  type CityLocation,
+} from "~/components/LocationModal";
 import Breadcrumb from "~/components/Breadcrumb";
 import {
   buildUpcomingHostMoodMap,
@@ -35,7 +38,13 @@ const PILL_TO_MOODS: Record<Exclude<ExplorePill, "All">, string[]> = {
   Wellness: ["wellness"],
 };
 
-type PriceFilter = "any" | "free" | "under_500" | "500_1500" | "1500_3000" | "3000_plus";
+type PriceFilter =
+  | "any"
+  | "free"
+  | "under_500"
+  | "500_1500"
+  | "1500_3000"
+  | "3000_plus";
 type DurationFilter = "any" | "under_60" | "60_120" | "120_240" | "240_plus";
 type RatingFilter = "any" | "new" | "3_5_plus" | "4_0_plus" | "4_5_plus";
 
@@ -60,6 +69,18 @@ const matchesNormalizedQuery = (
   return values.some((value) =>
     (value ?? "").toLowerCase().includes(normalizedQuery),
   );
+};
+
+const matchesExplorePill = (
+  selectedPill: ExplorePill,
+  values: Array<string | null | undefined>,
+) => {
+  if (selectedPill === "All") return true;
+
+  const moodMatchers = PILL_TO_MOODS[selectedPill] ?? [];
+  const haystack = values.filter(Boolean).join(" ").toLowerCase();
+
+  return moodMatchers.some((mood) => haystack.includes(mood));
 };
 
 export default function ExplorePage() {
@@ -103,7 +124,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     setVisibleExperiences(8);
-  }, [priceFilter, durationFilter, ratingFilter, normalizedQuery]);
+  }, [priceFilter, durationFilter, ratingFilter, normalizedQuery, pill]);
 
   useEffect(() => {
     if (!hostMoodFilters.includes(hostMoodFilter)) {
@@ -169,14 +190,13 @@ export default function ExplorePage() {
     const pillFiltered =
       pill === "All"
         ? searched
-        : searched.filter((host) => {
-            const haystack = [host.tagline, host.bio, ...(host.expertise_tags ?? [])]
-              .filter(Boolean)
-              .join(" ")
-              .toLowerCase();
-            const moodMatchers = PILL_TO_MOODS[pill] ?? [];
-            return moodMatchers.some((m) => haystack.includes(m));
-          });
+        : searched.filter((host) =>
+            matchesExplorePill(pill, [
+              host.tagline,
+              host.bio,
+              ...(host.expertise_tags ?? []),
+            ]),
+          );
 
     const moodFiltered = pillFiltered.filter((host) =>
       hostMatchesMood(host.id, hostMoodFilter, hostMoodMap),
@@ -199,6 +219,15 @@ export default function ExplorePage() {
         ]),
       );
     }
+
+    list = list.filter((event) =>
+      matchesExplorePill(pill, [
+        event.mood,
+        event.title,
+        event.hook_line,
+        event.description,
+      ]),
+    );
 
     const byPrice = (evtPriceCents: number | null, filter: PriceFilter) => {
       const rupees = evtPriceCents ? evtPriceCents / 100 : 0;
@@ -245,7 +274,7 @@ export default function ExplorePage() {
       .filter((event) => byDuration(event.duration_minutes, durationFilter))
       .filter((event) => byRating(event.avg_rating, event.total_reviews, ratingFilter))
       .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-  }, [events, priceFilter, durationFilter, ratingFilter, normalizedQuery]);
+  }, [events, priceFilter, durationFilter, ratingFilter, normalizedQuery, pill]);
 
   const visibleEvents = filteredExperiences.slice(0, visibleExperiences);
   const canLoadMore = visibleExperiences < filteredExperiences.length;
@@ -414,8 +443,10 @@ export default function ExplorePage() {
                   key={item}
                   type="button"
                   onClick={() => setPill(item)}
-                  className={`inline-flex items-center justify-center rounded-full border border-sky-200 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] shadow-[0_10px_24px_rgba(74,141,194,0.08)] ${
-                    isActive ? "bg-[#dff3ff] text-[#0e8ae0]" : "bg-white/90 text-[#5a88ac]"
+                  className={`inline-flex items-center justify-center rounded-full border border-sky-200 px-4 py-2 text-[11px] font-extrabold tracking-[0.08em] uppercase shadow-[0_10px_24px_rgba(74,141,194,0.08)] ${
+                    isActive
+                      ? "bg-[#dff3ff] text-[#0e8ae0]"
+                      : "bg-white/90 text-[#5a88ac]"
                   }`}
                 >
                   {item}
@@ -424,7 +455,7 @@ export default function ExplorePage() {
             })}
           </div>
 
-          {/* Filter selects */}
+          {/* Event-only filter selects */}
           <div className="mt-3 flex flex-wrap gap-2">
             <div className="relative">
               <label htmlFor="price-filter" className="sr-only">Price range</label>
@@ -432,7 +463,7 @@ export default function ExplorePage() {
                 id="price-filter"
                 value={priceFilter}
                 onChange={(e) => setPriceFilter(e.target.value as PriceFilter)}
-                className="h-9 rounded-full border border-sky-200 bg-white/90 px-4 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#5a88ac] shadow-[0_10px_24px_rgba(74,141,194,0.08)] outline-none"
+                className="h-9 rounded-full border border-sky-200 bg-white/90 px-4 text-[11px] font-extrabold tracking-[0.08em] text-[#5a88ac] uppercase shadow-[0_10px_24px_rgba(74,141,194,0.08)] outline-none"
               >
                 <option value="any">Price: Any</option>
                 <option value="free">Free</option>
@@ -464,8 +495,10 @@ export default function ExplorePage() {
               <select
                 id="rating-filter"
                 value={ratingFilter}
-                onChange={(e) => setRatingFilter(e.target.value as RatingFilter)}
-                className="h-9 rounded-full border border-sky-200 bg-white/90 px-4 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#5a88ac] shadow-[0_10px_24px_rgba(74,141,194,0.08)] outline-none"
+                onChange={(e) =>
+                  setRatingFilter(e.target.value as RatingFilter)
+                }
+                className="h-9 rounded-full border border-sky-200 bg-white/90 px-4 text-[11px] font-extrabold tracking-[0.08em] text-[#5a88ac] uppercase shadow-[0_10px_24px_rgba(74,141,194,0.08)] outline-none"
               >
                 <option value="any">Rating: Any</option>
                 <option value="new">New</option>
@@ -475,6 +508,10 @@ export default function ExplorePage() {
               </select>
             </div>
           </div>
+
+          <p className="mt-2 text-xs font-medium text-[#7da2c1]">
+            Price, duration, and rating filters apply to experiences only.
+          </p>
         </section>
 
         {/* Hosts section */}
@@ -542,7 +579,7 @@ export default function ExplorePage() {
                         <h3 className="line-clamp-1 text-[15px] font-bold text-[#16304c]">
                           {fullName}
                         </h3>
-                        <span className="rounded-full bg-[#f5fbff] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#0e8ae0]">
+                        <span className="rounded-full bg-[#f5fbff] px-2.5 py-1 text-[10px] font-extrabold tracking-[0.08em] text-[#0e8ae0] uppercase">
                           {(host.avg_rating ?? 4.8).toFixed(1)}
                         </span>
                       </div>
@@ -552,7 +589,8 @@ export default function ExplorePage() {
                         </strong>
                       </p>
                       <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#6f8daa]">
-                        {host.bio ?? "Hosting thoughtful sessions around the city."}
+                        {host.bio ??
+                          "Hosting thoughtful sessions around the city."}
                       </p>
                       {hostMoods.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -582,7 +620,8 @@ export default function ExplorePage() {
                 Discover Experiences
               </h2>
               <p className="mt-1 text-sm text-[#6f8daa]">
-                Curated activities{location?.city ? ` around ${location.city}` : ""}.
+                Curated activities
+                {location?.city ? ` around ${location.city}` : ""}.
               </p>
             </div>
             <span className="inline-flex items-center justify-center rounded-full border border-sky-200 bg-white/90 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] text-[#5a88ac] shadow-[0_10px_24px_rgba(74,141,194,0.08)]">

@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useSavedExperiences, useListPublicEvents, useUnsaveExperience } from "~/hooks/useApi";
+import {
+  useSavedExperiences,
+  useListPublicEvents,
+  useUnsaveExperience,
+} from "~/hooks/useApi";
 import { type EventDTO } from "~/lib/api";
 import * as components from "~/components";
 import { FiBookmark, FiTrash2, FiMapPin } from "react-icons/fi";
@@ -28,12 +32,15 @@ export default function SavedExperiencesPage() {
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("msm_user_id");
-    setUserId(storedUserId && storedUserId !== "existing" ? storedUserId : null);
+    setUserId(
+      storedUserId && storedUserId !== "existing" ? storedUserId : null,
+    );
     setIsHydrated(true);
   }, []);
 
   // Fetch user's saved experiences
-  const { data: savedExperiences, isLoading: savedLoading } = useSavedExperiences(userId);
+  const { data: savedExperiences, isLoading: savedLoading } =
+    useSavedExperiences(userId);
 
   // Fetch all public events to get event details
   const { data: allEvents } = useListPublicEvents();
@@ -96,17 +103,19 @@ export default function SavedExperiencesPage() {
             </div>
           </div>
         ) : savedWithEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {savedWithEvents.map(({ saved, event }) => (
               <div
                 key={saved.id}
                 className="border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 group bg-white flex flex-col h-full"
               >
                 {/* Image Container */}
-                <div className="relative overflow-hidden bg-gray-200 aspect-video">
+                <div className="relative aspect-video overflow-hidden bg-gray-200">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={event.cover_image_url ?? "/assets/home/placeholder.jpg"}
+                    src={
+                      event.cover_image_url ?? "/assets/home/placeholder.jpg"
+                    }
                     alt={event.title}
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
