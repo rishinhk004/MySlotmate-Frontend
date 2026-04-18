@@ -353,9 +353,9 @@ const formatStat = (value: number, target: number) => {
 const ShowcaseSections = () => {
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [featuredId, setFeaturedId] = useState<string | null>(null);
-  const [isFeaturedPlaying, setIsFeaturedPlaying] = useState(false);
+  const [isFeaturedPlaying, setIsFeaturedPlaying] = useState(true);
   const [storyIndex, setStoryIndex] = useState(0);
-  const [isStoryPlaying, setIsStoryPlaying] = useState(false);
+  const [isStoryPlaying, setIsStoryPlaying] = useState(true);
   const [communityIndex, setCommunityIndex] = useState(0);
   const [stats, setStats] = useState([0, 0, 0, 0]);
   const [location, setLocation] = useState<CityLocation | null>(null);
