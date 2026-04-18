@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import {
   FiClock,
@@ -11,6 +11,9 @@ import {
   FiTrash2,
   FiUpload,
   FiX,
+  FiArrowUp,
+  FiArrowDown,
+  FiList,
 } from "react-icons/fi";
 import { LuArrowRight, LuCalendar, LuLoader2, LuUser } from "react-icons/lu";
 import { toast } from "sonner";
@@ -24,14 +27,20 @@ import {
   usePublishBlog,
   useUploadBlogCover,
   useUpdateBlog,
+  useUploadFiles,
 } from "~/hooks/useApi";
 import type { BlogCreatePayload, BlogDTO } from "~/lib/api";
 import { auth } from "~/utils/firebase";
 import { env } from "~/env";
 
+// Block types for rich content editor
+type TextBlock = { id: string; type: "text"; content: string };
+type ImageBlock = { id: string; type: "image"; url: string; caption: string };
+type BlogBlock = TextBlock | ImageBlock;
+
 type BlogFormState = {
   category: string;
-  content: string;
+  blocks: BlogBlock[];
   cover_image_url: string;
   coverImageFile: File | null;
   description: string;
@@ -41,7 +50,7 @@ type BlogFormState = {
 
 const DEFAULT_FORM_STATE: BlogFormState = {
   category: "",
-  content: "",
+  blocks: [{ id: "1", type: "text", content: "" }],
   cover_image_url: "",
   coverImageFile: null,
   description: "",
@@ -50,6 +59,32 @@ const DEFAULT_FORM_STATE: BlogFormState = {
 };
 
 const FALLBACK_BLOG_IMAGE = "/assets/home/hiking.jpg";
+
+// Helper functions for block management
+function generateBlockId() {
+  return Math.random().toString(36).substring(2, 11);
+}
+
+function blocksToContent(blocks: BlogBlock[]): string {
+  return JSON.stringify(blocks);
+}
+
+function contentToBlocks(content: string | null | undefined): BlogBlock[] {
+  if (!content?.trim()) return [{ id: generateBlockId(), type: "text", content: "" }];
+  
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return parsed;
+    }
+  } catch {
+    // If not JSON, treat as legacy plain text content
+  }
+  
+  return [{ id: generateBlockId(), type: "text", content: content || "" }];
+}
 
 function formatBlogDate(dateString: string | null | undefined) {
   if (!dateString) return "Draft";
@@ -64,6 +99,32 @@ function formatBlogDate(dateString: string | null | undefined) {
 function getBlogValue(value: string | null | undefined, fallback = "") {
   return value?.trim() ?? fallback;
 }
+
+// Extract table of contents from blocks
+type TOCItem = { id: string; level: number; text: string };
+
+function extractTableOfContents(blocks: BlogBlock[]): TOCItem[] {
+  const items: TOCItem[] = [];
+  const headingRegex = /^(#{1,6})\s+(.+)$/gm;
+
+  blocks.forEach((block) => {
+    if (block.type === "text") {
+      let match;
+      while ((match = headingRegex.exec(block.content)) !== null) {
+        const level = (match[1] ?? "").length;
+        const text = (match[2] ?? "").trim();
+        if (level > 0 && text) {
+          const id = `heading-${items.length}`;
+          items.push({ id, level, text });
+        }
+      }
+    }
+  });
+
+  return items;
+}
+
+
 
 function getBlogExcerpt(blog: BlogDTO) {
   const source = getBlogValue(blog.description) || getBlogValue(blog.content);
@@ -87,13 +148,358 @@ function getCategoryColor(category: string | null | undefined) {
 function mapBlogToFormState(blog: BlogDTO): BlogFormState {
   return {
     category: getBlogValue(blog.category),
-    content: getBlogValue(blog.content),
+    blocks: contentToBlocks(blog.content),
     cover_image_url: blog.cover_image_url ?? "",
     coverImageFile: null,
     description: getBlogValue(blog.description),
     read_time_minutes: String(blog.read_time_minutes ?? 5),
     title: getBlogValue(blog.title),
   };
+}
+
+function BlockRenderer({ blocks, showHeadings = false }: { blocks: BlogBlock[]; showHeadings?: boolean }) {
+  const headingSizes: Record<number, string> = {
+    1: "text-2xl font-bold",
+    2: "text-xl font-bold",
+    3: "text-lg font-bold",
+    4: "text-base font-bold",
+    5: "text-sm font-bold",
+    6: "text-xs font-bold",
+  };
+
+  const headingTags = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
+  let headingCounter = 0;
+
+  return (
+    <div className="space-y-6">
+      {blocks.map((block) => {
+        if (block.type === "text") {
+          const lines = block.content.split("\n");
+          return (
+            <div key={block.id}>
+              {lines.map((line, lineIndex) => {
+                const headingRegex = /^(#{1,6})\s+(.+)$/;
+                const headingMatch = headingRegex.exec(line);
+                if (headingMatch && showHeadings) {
+                  const level = (headingMatch[1] ?? "").length;
+                  const text = (headingMatch[2] ?? "").trim();
+                  if (level >= 1 && level <= 6 && text) {
+                    const headingId = `heading-${headingCounter++}`;
+                    const HeadingTag = headingTags[level - 1]!;
+                    const sizeClass = headingSizes[level] ?? headingSizes[1];
+
+                    return React.createElement(
+                      HeadingTag,
+                      {
+                        key: `${block.id}-${lineIndex}`,
+                        id: headingId,
+                        className: `${sizeClass} text-[#16304c] scroll-mt-20`,
+                      },
+                      text
+                    );
+                  }
+                }
+
+                return line ? (
+                  <div
+                    key={`${block.id}-${lineIndex}`}
+                    className="prose prose-slate max-w-none whitespace-pre-wrap text-[15px] leading-8 text-[#29465f]"
+                  >
+                    {line}
+                  </div>
+                ) : (
+                  <div key={`${block.id}-${lineIndex}`} className="h-2" />
+                );
+              })}
+            </div>
+          );
+        } else {
+          return (
+            <figure key={block.id} className="space-y-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={block.url}
+                alt={block.caption || "Blog image"}
+                className="w-full rounded-xl"
+              />
+              {block.caption && (
+                <figcaption className="text-center text-sm text-gray-600 italic">
+                  {block.caption}
+                </figcaption>
+              )}
+            </figure>
+          );
+        }
+      })}
+    </div>
+  );
+}
+
+function BlockEditor({
+  blocks,
+  onBlocksChange,
+}: {
+  blocks: BlogBlock[];
+  onBlocksChange: (blocks: BlogBlock[]) => void;
+}) {
+  const blockImageInputRef = useRef<HTMLInputElement>(null);
+  const [imageInsertIndex, setImageInsertIndex] = useState<number | null>(null);
+  const [uploadingImageId, setUploadingImageId] = useState<string | null>(null);
+  const uploadFiles = useUploadFiles();
+
+  const handleTextChange = (blockId: string, content: string) => {
+    const updated = blocks.map((block) =>
+      block.id === blockId && block.type === "text"
+        ? { ...block, content }
+        : block
+    );
+    onBlocksChange(updated);
+  };
+
+  const handleBlockDelete = (blockId: string) => {
+    if (blocks.length === 1) {
+      toast.error("You must have at least one block.");
+      return;
+    }
+    const updated = blocks.filter((block) => block.id !== blockId);
+    onBlocksChange(updated);
+  };
+
+  const handleMoveBlock = (blockId: string, direction: "up" | "down") => {
+    const index = blocks.findIndex((b) => b.id === blockId);
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === blocks.length - 1)
+    ) {
+      return;
+    }
+
+    const newBlocks = [...blocks];
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    const temp = newBlocks[index]!;
+    newBlocks[index] = newBlocks[swapIndex]!;
+    newBlocks[swapIndex] = temp;
+    onBlocksChange(newBlocks);
+  };
+
+  const handleAddTextBlock = (afterBlockId: string) => {
+    const index = blocks.findIndex((b) => b.id === afterBlockId);
+    if (index === -1) return; // Block not found
+    
+    const newBlock: TextBlock = {
+      id: generateBlockId(),
+      type: "text",
+      content: "",
+    };
+    const updated = [...blocks.slice(0, index + 1), newBlock, ...blocks.slice(index + 1)];
+    onBlocksChange(updated);
+  };
+
+  const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || imageInsertIndex === null) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image must be under 10 MB.");
+      return;
+    }
+
+    const blockId = generateBlockId();
+    setUploadingImageId(blockId);
+
+    try {
+      // Upload to S3
+      const uploadRes = await uploadFiles.mutateAsync({
+        files: [file],
+        folder: "blogs/covers",
+      });
+
+      const imageUrl = uploadRes.data[0]?.url;
+      if (!imageUrl) {
+        toast.error("Image upload failed - no URL returned");
+        setUploadingImageId(null);
+        return;
+      }
+
+      const newBlock: ImageBlock = {
+        id: blockId,
+        type: "image",
+        url: imageUrl,
+        caption: "",
+      };
+
+      const updated = [
+        ...blocks.slice(0, imageInsertIndex + 1),
+        newBlock,
+        ...blocks.slice(imageInsertIndex + 1),
+      ];
+      onBlocksChange(updated);
+      setImageInsertIndex(null);
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Image upload failed";
+      toast.error(message);
+    } finally {
+      setUploadingImageId(null);
+      if (event.target) event.target.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, index) => (
+        <div key={block.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          {block.type === "text" ? (
+            <div className="space-y-3">
+              <textarea
+                value={block.content}
+                onChange={(e) => handleTextChange(block.id, e.target.value)}
+                placeholder="Write your content here (supports line breaks)..."
+                rows={6}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal outline-none focus:border-[#0094CA] focus:ring-2 focus:ring-[#0094CA]/20"
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddTextBlock(block.id)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                >
+                  <FiPlus className="h-4 w-4" />
+                  Add Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageInsertIndex(index);
+                    blockImageInputRef.current?.click();
+                  }}
+                  disabled={uploadingImageId !== null}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#cceeff] bg-[#f0faff] px-3 py-2 text-sm font-medium text-[#0094CA] transition hover:bg-[#e6f6ff] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploadingImageId === null ? (
+                    <>
+                      <FiImage className="h-4 w-4" />
+                      Add Image
+                    </>
+                  ) : (
+                    <>
+                      <LuLoader2 className="h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveBlock(block.id, "up")}
+                  disabled={index === 0}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <FiArrowUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveBlock(block.id, "down")}
+                  disabled={index === blocks.length - 1}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <FiArrowDown className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBlockDelete(block.id)}
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-lg bg-white p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={block.url}
+                  alt="Block preview"
+                  className="mb-3 max-h-64 w-full rounded object-cover"
+                />
+                <input
+                  type="text"
+                  value={block.caption}
+                  onChange={(e) => {
+                    const updated = blocks.map((b) =>
+                      b.id === block.id && b.type === "image"
+                        ? { ...b, caption: e.target.value }
+                        : b
+                    );
+                    onBlocksChange(updated);
+                  }}
+                  placeholder="Image caption (optional)"
+                  className="w-full rounded border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#0094CA] focus:ring-2 focus:ring-[#0094CA]/20"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddTextBlock(block.id)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                >
+                  <FiPlus className="h-4 w-4" />
+                  Add Text
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageInsertIndex(index);
+                    blockImageInputRef.current?.click();
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#cceeff] bg-[#f0faff] px-3 py-2 text-sm font-medium text-[#0094CA] transition hover:bg-[#e6f6ff]"
+                >
+                  <FiImage className="h-4 w-4" />
+                  Add Image
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveBlock(block.id, "up")}
+                  disabled={index === 0}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <FiArrowUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveBlock(block.id, "down")}
+                  disabled={index === blocks.length - 1}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 disabled:opacity-50"
+                >
+                  <FiArrowDown className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBlockDelete(block.id)}
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      <input
+        ref={blockImageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageSelection}
+        className="hidden"
+      />
+    </div>
+  );
 }
 
 function BlogLoadingSkeleton() {
@@ -160,7 +566,7 @@ function BlogCard({
         <h3 className="line-clamp-2 text-xl font-bold text-[#16304c]">
           {getBlogValue(blog.title, "Untitled blog")}
         </h3>
-        <p className="mt-2 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[#6f8daa]">
+        <p className="mt-2 line-clamp-3 min-h-18 text-sm leading-6 text-[#6f8daa]">
           {getBlogExcerpt(blog)}
         </p>
 
@@ -228,9 +634,54 @@ function BlogDetailModal({
   onDelete: (blog: BlogDTO) => void;
   onEdit: (blog: BlogDTO) => void;
 }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [showTOC, setShowTOC] = useState(true);
+
+  const blocks = useMemo(() => (blog ? contentToBlocks(blog.content) : []), [blog]);
+  const tocItems = useMemo(() => extractTableOfContents(blocks), [blocks]);
+
+  // Update reading progress
+  useEffect(() => {
+    const container = modalContentRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight - container.clientHeight;
+      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      setReadingProgress(progress);
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToHeading = (headingId: string) => {
+    const element = contentRef.current?.querySelector(`#${headingId}`);
+    if (element && modalContentRef.current) {
+      const rect = element.getBoundingClientRect();
+      const containerRect = modalContentRef.current.getBoundingClientRect();
+      const scrollTop = rect.top - containerRect.top + modalContentRef.current.scrollTop - 60;
+      modalContentRef.current.scrollTo({ top: scrollTop, behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/50 p-4">
-      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-250 flex items-center justify-center bg-black/50 p-4">
+      {/* Progress bar */}
+      <div className="absolute top-0 left-0 right-0 z-251 h-1 bg-gray-200">
+        <div
+          className="h-full bg-[#0094CA] transition-all duration-300"
+          style={{ width: `${readingProgress}%` }}
+        />
+      </div>
+
+      <div
+        ref={modalContentRef}
+        className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl"
+      >
         <button
           type="button"
           onClick={onClose}
@@ -240,23 +691,63 @@ function BlogDetailModal({
           <FiX className="h-5 w-5" />
         </button>
 
+        {/* TOC Toggle Button */}
+        {tocItems.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowTOC(!showTOC)}
+            className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2 text-sm text-gray-600 shadow-sm transition hover:bg-white hover:text-gray-900"
+            aria-label="Toggle table of contents"
+          >
+            <FiList className="h-4 w-4" />
+            <span className="hidden sm:inline">TOC</span>
+          </button>
+        )}
+
         {isLoading ? (
           <div className="flex min-h-[50vh] items-center justify-center">
             <LuLoader2 className="h-8 w-8 animate-spin text-[#0094CA]" />
           </div>
         ) : blog ? (
-          <>
-            <div className="h-72 overflow-hidden bg-slate-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={blog.cover_image_url ?? FALLBACK_BLOG_IMAGE}
-                alt={getBlogValue(blog.title, "Blog cover")}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            </div>
+          <div className="flex">
+            {/* Table of Contents Sidebar */}
+            {showTOC && tocItems.length > 0 && (
+              <aside className="hidden w-64 border-r border-gray-200 bg-gray-50 p-6 lg:block">
+                <h3 className="mb-4 text-sm font-semibold text-gray-700">Contents</h3>
+                <nav className="space-y-2">
+                  {tocItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => scrollToHeading(item.id)}
+                      className={`block w-full text-left text-sm transition hover:text-[#0094CA] ${
+                        item.level === 1 || item.level === 2
+                          ? "font-medium text-gray-900"
+                          : "pl-4 text-gray-600"
+                      }`}
+                      style={{
+                        paddingLeft: `${(item.level - 1) * 12}px`,
+                      }}
+                    >
+                      {item.text}
+                    </button>
+                  ))}
+                </nav>
+              </aside>
+            )}
 
-            <div className="p-6 sm:p-8">
+            {/* Main Content */}
+            <div ref={contentRef} className="flex-1 p-6 sm:p-8">
+              <div className="h-72 -mx-6 -mt-6 mb-6 overflow-hidden rounded-t-3xl bg-slate-100 sm:-mx-8 sm:mb-8">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={blog.cover_image_url ?? FALLBACK_BLOG_IMAGE}
+                  alt={getBlogValue(blog.title, "Blog cover")}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getCategoryColor(blog.category)}`}
@@ -306,11 +797,11 @@ function BlogDetailModal({
                 )}
               </div>
 
-              <div className="prose prose-slate mt-6 max-w-none text-[15px] leading-8 whitespace-pre-line text-[#29465f]">
-                {getBlogValue(blog.content)}
+              <div className="mt-6">
+                <BlockRenderer blocks={blocks} showHeadings={true} />
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="text-lg font-semibold text-gray-900">
@@ -430,6 +921,12 @@ export default function BlogsPage() {
     if (formState.coverImageFile && formState.cover_image_url.startsWith("blob:")) {
       URL.revokeObjectURL(formState.cover_image_url);
     }
+    // Clean up blob URLs from image blocks
+    formState.blocks.forEach((block) => {
+      if (block.type === "image" && block.url.startsWith("blob:")) {
+        URL.revokeObjectURL(block.url);
+      }
+    });
     setEditingBlog(null);
     setFormState(DEFAULT_FORM_STATE);
     if (coverImageInputRef.current) {
@@ -544,7 +1041,7 @@ export default function BlogsPage() {
       toast.error("Title and category are required.");
       return;
     }
-    if (!formState.description.trim() || !formState.content.trim()) {
+    if (!formState.description.trim() || formState.blocks.length === 0) {
       toast.error("Description and content are required.");
       return;
     }
@@ -555,7 +1052,7 @@ export default function BlogsPage() {
 
     const payload: BlogCreatePayload = {
       category: formState.category.trim(),
-      content: formState.content.trim(),
+      content: blocksToContent(formState.blocks),
       description: formState.description.trim(),
       read_time_minutes: readTime,
       title: formState.title.trim(),
@@ -634,7 +1131,7 @@ export default function BlogsPage() {
       <components.Navbar />
 
       <div className="flex-1">
-        <div className="site-x mx-auto w-full max-w-[1120px] py-8 pt-24">
+        <div className="site-x mx-auto w-full max-w-280 py-8 pt-24">
           <Breadcrumb
             items={[{ label: "Home", href: "/" }, { label: "Blog & Stories" }]}
             className="mb-6"
@@ -832,20 +1329,21 @@ export default function BlogsPage() {
                   </label>
                 </div>
 
-                <label className="block">
-                  <span className="mb-1.5 block text-sm font-medium text-gray-700">
-                    Full Content
+                <div className="block">
+                  <span className="mb-3 block text-sm font-medium text-gray-700">
+                    Blog Content (With Images)
                   </span>
-                  <textarea
-                    value={formState.content}
-                    onChange={(event) =>
-                      handleFormChange("content", event.target.value)
+                  <p className="mb-4 text-sm text-gray-600">
+                    Create rich content with text and images. Use the buttons to add new blocks,
+                    reorder them, and add captions to images.
+                  </p>
+                  <BlockEditor
+                    blocks={formState.blocks}
+                    onBlocksChange={(blocks) =>
+                      handleFormChange("blocks", blocks)
                     }
-                    placeholder="Write the full blog article here..."
-                    rows={10}
-                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:border-[#0094CA] focus:ring-2 focus:ring-[#0094CA]/20"
                   />
-                </label>
+                </div>
 
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
@@ -877,7 +1375,7 @@ export default function BlogsPage() {
             </section>
           )}
 
-          <section className="mb-8 flex flex-col gap-4 rounded-[24px] border border-gray-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+          <section className="mb-8 flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-lg">
               <FiSearch className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
