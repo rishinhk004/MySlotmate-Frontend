@@ -837,7 +837,16 @@ export default function CreateExperiencePage() {
                     <input
                       type="text"
                       value={form.location}
-                      onChange={(e) => updateForm("location", e.target.value)}
+                      onChange={(e) => {
+                        const newLocation = e.target.value;
+                        updateForm("location", newLocation);
+                        
+                        // Auto-generate Google Maps URL
+                        if (newLocation.trim()) {
+                          const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(newLocation)}`;
+                          updateForm("googleMapsUrl", mapsUrl);
+                        }
+                      }}
                       placeholder="Enter the meeting location"
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
                     />
@@ -852,10 +861,10 @@ export default function CreateExperiencePage() {
                       type="url"
                       value={form.googleMapsUrl}
                       onChange={(e) => updateForm("googleMapsUrl", e.target.value)}
-                      placeholder="e.g., https://maps.google.com/..."
+                      placeholder="Auto-generated from location"
                       className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
                     />
-                    <p className="text-xs text-gray-500">Share a Google Maps link so guests can view the location</p>
+                    <p className="text-xs text-gray-500">Auto-generated from location • Edit if you want to use a specific pin location</p>
                   </div>
                 )}
 
