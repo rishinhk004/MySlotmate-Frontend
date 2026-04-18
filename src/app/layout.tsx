@@ -1,4 +1,4 @@
-import "~/styles/globals.css";
+import "../styles/globals.css";
 
 import { type Metadata, type Viewport } from "next";
 import { Geist } from "next/font/google";
@@ -11,7 +11,7 @@ const appUrl = "https://www.myslotmate.com";
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "MySlotMate - Book Unique Experiences with Amazing Hosts",
+    default: "MySlotMate - Book People's Time",
     template: "%s | MySlotMate",
   },
   description:

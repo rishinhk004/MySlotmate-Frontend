@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HostNavbar } from "~/components/host-dashboard";
 import Breadcrumb from "~/components/Breadcrumb";
 import { useMyHost, useEvent, useUpdateEvent, useUploadFiles } from "~/hooks/useApi";
+import { useDragDrop } from "~/hooks/useDragDrop";
 import { FiArrowLeft, FiX, FiUpload, FiTrash2, FiCheck } from "react-icons/fi";
 import type { BookingDTO } from "~/lib/api";
 import { toast } from "sonner";
@@ -42,6 +43,8 @@ const MOODS = [
   "Adventurous", "Relaxing", "Creative", "Social", "Educational", "Wellness", "Culinary", "Cultural"
 ];
 
+const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
@@ -65,9 +68,9 @@ function ImageUpload({
   onRemoveMultiple?: (index: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dragDropZoneRef = useRef<HTMLDivElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  const processFiles = useCallback((files: File[]) => {
     if (files.length === 0) return;
 
     const oversizedFiles: string[] = [];
@@ -90,7 +93,16 @@ function ImageUpload({
     if (validFiles.length > 0) {
       onUpload(validFiles);
     }
+  }, [onUpload]);
 
+  const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragDrop({
+    onDrop: processFiles,
+    accept: "image/*",
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    processFiles(files);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -133,11 +145,22 @@ function ImageUpload({
 
       {(!preview || multiple) && (
         <div
+          ref={dragDropZoneRef}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#0094CA] hover:bg-gray-50 transition"
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
+            isDragging
+              ? "border-[#0094CA] bg-[#0094CA]/5 scale-105"
+              : "border-gray-300 hover:border-[#0094CA] hover:bg-gray-50"
+          }`}
         >
-          <FiUpload className="mx-auto text-gray-400 mb-2" size={24} />
-          <p className="text-sm text-gray-500">Click to upload {multiple ? "images" : "image"}</p>
+          <FiUpload className={`mx-auto mb-2 transition ${isDragging ? "text-[#0094CA]" : "text-gray-400"}`} size={24} />
+          <p className={`text-sm transition ${isDragging ? "text-[#0094CA] font-semibold" : "text-gray-500"}`}>
+            {isDragging ? `Drop ${multiple ? "images" : "image"} here` : `Click to upload or drag ${multiple ? "images" : "image"}`}
+          </p>
           <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
         </div>
       )}
@@ -568,6 +591,224 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none resize-none"
                   maxLength={2000}
                 />
+              </div>
+
+              {/* Schedule & Pricing Section */}
+              <div className="border-t border-gray-100 pt-6">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Schedule & Pricing</h3>
+
+                {/* Date */}
+                <div className="space-y-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Event Date <span className="text-red-500">*</span></label>
+                  <input
+                    type="date"
+                    value={form.eventDate}
+                    onChange={(e) => updateForm("eventDate", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                  />
+                </div>
+
+                {/* Time */}
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Start Time <span className="text-red-500">*</span></label>
+                    <input
+                      type="time"
+                      value={form.eventTime}
+                      onChange={(e) => updateForm("eventTime", e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">End Time</label>
+                    <input
+                      type="time"
+                      value={form.endTime}
+                      onChange={(e) => updateForm("endTime", e.target.value)}
+                      placeholder="Optional - auto-calculated from duration if not set"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div className="space-y-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Duration (minutes) <span className="text-red-500">*</span></label>
+                  <div className="space-y-3">
+                    {/* Quick Select Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {DURATION_OPTIONS.map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => updateForm("durationMinutes", mins)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            form.durationMinutes === mins
+                              ? "bg-[#0094CA] text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Custom Input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={15}
+                        step={5}
+                        value={form.durationMinutes}
+                        onChange={(e) => updateForm("durationMinutes", Math.max(15, parseInt(e.target.value) || 30))}
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                        placeholder="Enter custom duration"
+                      />
+                      <span className="text-sm font-medium text-gray-600">min</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Click quick options or enter custom duration (minimum 15 min)</p>
+                  </div>
+                </div>
+
+                {/* Pricing */}
+                <div className="space-y-2 mb-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.isFree}
+                      onChange={(e) => updateForm("isFree", e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Free Experience</span>
+                  </label>
+                </div>
+
+                {!form.isFree && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Price (₹)</label>
+                    <input
+                      type="number"
+                      value={form.priceCents / 100}
+                      onChange={(e) => updateForm("priceCents", Math.round(parseFloat(e.target.value) * 100) || 0)}
+                      placeholder="e.g., 500"
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Group Size */}
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Min Group Size</label>
+                    <input
+                      type="number"
+                      value={form.minGroupSize}
+                      onChange={(e) => updateForm("minGroupSize", parseInt(e.target.value) || 1)}
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Max Group Size</label>
+                    <input
+                      type="number"
+                      value={form.maxGroupSize}
+                      onChange={(e) => updateForm("maxGroupSize", parseInt(e.target.value) || 10)}
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Location Type */}
+                <div className="space-y-2 mb-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.isOnline}
+                      onChange={(e) => updateForm("isOnline", e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Online Experience</span>
+                  </label>
+                </div>
+
+                {form.isOnline ? (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Meeting Link</label>
+                    <input
+                      type="url"
+                      value={form.meetingLink}
+                      onChange={(e) => updateForm("meetingLink", e.target.value)}
+                      placeholder="e.g., https://zoom.us/j/... or https://meet.google.com/..."
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2 mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Location <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={form.location}
+                        onChange={(e) => updateForm("location", e.target.value)}
+                        placeholder="e.g., Central Park, New York"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2 mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Google Maps URL</label>
+                      <input
+                        type="url"
+                        value={form.googleMapsUrl}
+                        onChange={(e) => updateForm("googleMapsUrl", e.target.value)}
+                        placeholder="https://maps.google.com/..."
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Cancellation Policy */}
+                <div className="space-y-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Cancellation Policy</label>
+                  <select
+                    value={form.cancellationPolicy}
+                    onChange={(e) => updateForm("cancellationPolicy", e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                  >
+                    <option value="flexible">Flexible - Full refund up to 24 hours before</option>
+                    <option value="moderate">Moderate - Full refund up to 5 days before</option>
+                    <option value="strict">Strict - 50% refund up to 1 week before</option>
+                  </select>
+                </div>
+
+                {/* Recurring */}
+                <div className="space-y-2 mb-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.isRecurring}
+                      onChange={(e) => updateForm("isRecurring", e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Recurring Experience</span>
+                  </label>
+                </div>
+
+                {form.isRecurring && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Recurrence Rule</label>
+                    <input
+                      type="text"
+                      value={form.recurrenceRule}
+                      onChange={(e) => updateForm("recurrenceRule", e.target.value)}
+                      placeholder="e.g., FREQ=WEEKLY;BYDAY=MO,WE,FR"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none text-xs"
+                    />
+                    <p className="text-xs text-gray-500">Use iCalendar format for recurrence rules</p>
+                  </div>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">

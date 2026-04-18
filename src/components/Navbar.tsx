@@ -659,38 +659,6 @@ export default function Navbar() {
                     <p className="truncate text-xs text-gray-500">{user.email}</p>
                   </div>
                 </div>
-
-                {validUserId && (
-                  <div className="mx-0 my-3">
-                    <WalletDisplay
-                      userId={validUserId}
-                      userName={user.displayName ?? undefined}
-                      userEmail={user.email ?? undefined}
-                      userPhone={user.phoneNumber ?? undefined}
-                      variant="compact"
-                    />
-                  </div>
-                )}
-
-                <hr className="my-2" />
-
-                {/* Host Dashboard — mobile - Approved hosts */}
-                {hostStatus === "approved" && (
-                  <div className="mb-3 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">Host Dashboard</p>
-                      <p className="text-xs text-gray-500">Manage your experiences</p>
-                    </div>
-                    <Link
-                      href="/host-dashboard"
-                      onClick={() => setMobileOpen(false)}
-                      className="rounded-xl bg-[#0094CA] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#007dab]"
-                    >
-                      Go Now
-                    </Link>
-                  </div>
-                )}
-
                 {/* Become a Host — mobile - Non-hosts */}
                 {showBecomeHostButton && (
                   <div className="mb-3 flex items-center justify-between rounded-xl border border-[#cceeff] bg-[#f0faff] px-4 py-3">
