@@ -418,7 +418,7 @@ export default function AdminPage() {
                           {app.moods && app.moods.length > 0 && (
                             <p>🎯 Moods: {app.moods.map((m) => m.charAt(0).toUpperCase() + m.slice(1)).join(", ")}</p>
                           )}
-                          {(app.social_instagram || app.social_linkedin || app.social_website) && (
+                          {(app.social_instagram ?? app.social_linkedin ?? app.social_website) && (
                             <p>🔗 Social links included</p>
                           )}
                         </div>
@@ -666,8 +666,8 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {(selectedApp.social_instagram ||
-                  selectedApp.social_linkedin ||
+                {(selectedApp.social_instagram ??
+                  selectedApp.social_linkedin ??
                   selectedApp.social_website) && (
                   <div>
                     <h3 className="mb-3 font-semibold text-gray-900">Social Links</h3>
