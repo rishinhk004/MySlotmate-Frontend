@@ -19,6 +19,7 @@ import {
 } from "react-icons/lu";
 import { FaInstagram, FaLinkedin, FaGlobe } from "react-icons/fa";
 import { toast } from "sonner";
+import { useDragDrop } from "~/hooks/useDragDrop";
 import {
   useMyHost,
   useUpdateHostProfile,
@@ -77,11 +78,30 @@ const INITIAL: HostProfileData = {
 export default function HostProfileEditPage() {
   const [user] = useAuthState(auth);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarDropZoneRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<HostProfileData>(INITIAL);
   const [newTag, setNewTag] = useState("");
   const [hostId, setHostId] = useState<string | null>(null);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+
+  // Drag and drop for avatar - define handleAvatarFiles before useDragDrop
+  const handleAvatarFiles = useCallback((files: File[]) => {
+    const file = files[0];
+    if (file?.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setForm((p) => ({ ...p, avatarUrl: url }));
+      setPendingAvatarFile(file);
+      toast.success("Avatar image selected!");
+    } else if (file) {
+      toast.error("Please select a valid image file (PNG, JPG, JPEG)");
+    }
+  }, []);
+
+  const { isDragging: isAvatarDragging, handleDragEnter: handleAvatarDragEnter, handleDragLeave: handleAvatarDragLeave, handleDragOver: handleAvatarDragOver, handleDrop: handleAvatarDrop } = useDragDrop({
+    onDrop: handleAvatarFiles,
+    accept: "image/*",
+  });
 
   // Read userId from localStorage
   const [storedUserId, setStoredUserId] = useState<string | null>(null);
@@ -151,15 +171,10 @@ export default function HostProfileEditPage() {
 
   const handleAvatarChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) {
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      update("avatarUrl", url);
-      setPendingAvatarFile(file);
+      const files = Array.from(e.target.files ?? []);
+      handleAvatarFiles(files);
     },
-    [],
+    [handleAvatarFiles],
   );
 
   const handleSave = async () => {
@@ -178,7 +193,8 @@ export default function HostProfileEditPage() {
           });
           avatarUrl = uploadRes.data[0]?.url;
           setPendingAvatarFile(null);
-        } catch (uploadErr) {
+        } catch {
+          // Upload failed, continue with existing avatar
         }
       }
 
@@ -195,7 +211,7 @@ export default function HostProfileEditPage() {
         },
       });
       toast.success("Profile saved!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to save profile. Please try again.");
     }
   };
@@ -319,20 +335,31 @@ export default function HostProfileEditPage() {
                     <span className="text-2xl text-gray-400">👤</span>
                   </div>
                 )}
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">
                     Your Avatar
                   </p>
                   <p className="text-xs text-gray-500">
                     Recommended 500×500px, JPG or PNG
                   </p>
+                  <div 
+                    ref={avatarDropZoneRef}
+                    onDragEnter={handleAvatarDragEnter}
+                    onDragLeave={handleAvatarDragLeave}
+                    onDragOver={handleAvatarDragOver}
+                    onDrop={handleAvatarDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`mt-3 rounded-lg border-2 border-dashed p-3 text-center cursor-pointer transition ${
+                      isAvatarDragging
+                        ? "border-[#0094CA] bg-[#0094CA]/5"
+                        : "border-gray-300 hover:border-[#0094CA] hover:bg-gray-50"
+                    }`}
+                  >
+                    <p className={`text-xs transition ${isAvatarDragging ? "text-[#0094CA] font-semibold" : "text-gray-500"}`}>
+                      {isAvatarDragging ? "Drop image here" : "Drag or click to upload"}
+                    </p>
+                  </div>
                   <div className="mt-2 flex gap-3">
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-xs font-medium text-[#0094CA] hover:underline"
-                    >
-                      Upload New
-                    </button>
                     <button
                       onClick={() => update("avatarUrl", "")}
                       className="text-xs font-medium text-red-500 hover:underline"
@@ -442,7 +469,7 @@ export default function HostProfileEditPage() {
                 {/* Instagram */}
                 <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3.5">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-orange-400">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-pink-500 to-orange-400">
                       <FaInstagram className="h-4 w-4 text-white" />
                     </div>
                     <div>
@@ -475,8 +502,8 @@ export default function HostProfileEditPage() {
                           });
                           update("socialInstagram", "");
                           toast.success("Instagram disconnected");
-                        } catch (err) {
-                        toast.error("Failed to disconnect Instagram");
+                        } catch {
+                          toast.error("Failed to disconnect Instagram");
                         }
                       }}
                       className="text-gray-400 hover:text-gray-600"

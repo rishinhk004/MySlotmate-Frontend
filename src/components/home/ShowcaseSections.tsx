@@ -353,9 +353,9 @@ const formatStat = (value: number, target: number) => {
 const ShowcaseSections = () => {
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [featuredId, setFeaturedId] = useState<string | null>(null);
-  const [isFeaturedPlaying, setIsFeaturedPlaying] = useState(false);
+  const [isFeaturedPlaying, setIsFeaturedPlaying] = useState(true);
   const [storyIndex, setStoryIndex] = useState(0);
-  const [isStoryPlaying, setIsStoryPlaying] = useState(false);
+  const [isStoryPlaying, setIsStoryPlaying] = useState(true);
   const [communityIndex, setCommunityIndex] = useState(0);
   const [stats, setStats] = useState([0, 0, 0, 0]);
   const [location, setLocation] = useState<CityLocation | null>(null);
@@ -1263,7 +1263,10 @@ const ShowcaseSections = () => {
 
       <section className="site-x w-full">
         <div className="mx-auto grid w-full max-w-[1120px] gap-10 py-14 lg:grid-cols-[0.92fr_1.08fr]">
-          <div className="relative mx-auto mb-12 w-full max-w-[560px]">
+          <Link
+            href={storyHref}
+            className="relative mx-auto mb-12 w-full max-w-[560px] block"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={story.image}
@@ -1279,7 +1282,7 @@ const ShowcaseSections = () => {
                 - {story.author}
               </span>
             </div>
-          </div>
+          </Link>
 
           <div className="pt-2">
             <div className="flex flex-wrap items-center justify-between gap-3">

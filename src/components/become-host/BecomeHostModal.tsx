@@ -78,9 +78,9 @@ export default function BecomeHostModal({
 
           {/* Benefit 2 */}
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-900">
+            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#e6f8ff]">
               <svg
-                className="h-4 w-4 text-white"
+                className="h-4 w-4 text-[#0094CA]"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -103,9 +103,9 @@ export default function BecomeHostModal({
 
           {/* Benefit 3 */}
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-900">
+            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#e6f8ff]">
               <svg
-                className="h-4 w-4 text-white"
+                className="h-4 w-4 text-[#0094CA]"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >

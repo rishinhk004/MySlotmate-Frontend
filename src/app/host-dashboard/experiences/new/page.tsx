@@ -8,6 +8,7 @@ import Breadcrumb from "~/components/Breadcrumb";
 import { useMyHost, useCreateEvent, useUploadFiles, usePublishEvent } from "~/hooks/useApi";
 import { useContentModeration } from "~/hooks/useContentModeration";
 import { useSuggestions } from "~/hooks/useSuggestions";
+import { useDragDrop } from "~/hooks/useDragDrop";
 import { SuggestionChips } from "~/components/SuggestionChips";
 import { FiArrowLeft, FiArrowRight, FiUpload, FiX, FiCheck, FiMapPin, FiClock, FiUsers, FiCalendar, FiShare2, FiExternalLink, FiAlertTriangle } from "react-icons/fi";
 import { toast } from "sonner";
@@ -117,9 +118,13 @@ function ImageUpload({
   onRemoveMultiple?: (index: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dragDropZoneRef = useRef<HTMLDivElement>(null);
+  const { isDragging, handleDragEnter, handleDragLeave, handleDragOver, handleDrop } = useDragDrop({
+    onDrop: processFiles,
+    accept: "image/*",
+  });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
+  function processFiles(files: File[]) {
     if (files.length === 0) return;
 
     // Validate file sizes
@@ -145,7 +150,11 @@ function ImageUpload({
     if (validFiles.length > 0) {
       onUpload(validFiles);
     }
+  }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    processFiles(files);
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -189,11 +198,21 @@ function ImageUpload({
       {/* Upload button */}
       {(!preview || multiple) && (
         <div
+          ref={dragDropZoneRef}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-[#0094CA] hover:bg-gray-50 transition"
+          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${isDragging
+            ? "border-[#0094CA] bg-[#0094CA]/5 scale-105"
+            : "border-gray-300 hover:border-[#0094CA] hover:bg-gray-50"
+            }`}
         >
-          <FiUpload className="mx-auto text-gray-400 mb-2" size={24} />
-          <p className="text-sm text-gray-500">Click to upload {multiple ? "images" : "image"}</p>
+          <FiUpload className={`mx-auto mb-2 transition ${isDragging ? "text-[#0094CA]" : "text-gray-400"}`} size={24} />
+          <p className={`text-sm transition ${isDragging ? "text-[#0094CA] font-semibold" : "text-gray-500"}`}>
+            {isDragging ? `Drop ${multiple ? "images" : "image"} here` : `Click to upload or drag ${multiple ? "images" : "image"}`}
+          </p>
           <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
         </div>
       )}
@@ -224,11 +243,10 @@ function MoodSelector({ value, onChange }: { value: string; onChange: (v: string
             key={mood}
             type="button"
             onClick={() => onChange(mood.toLowerCase())}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              value === mood.toLowerCase()
-                ? "bg-[#0094CA] text-white"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${value === mood.toLowerCase()
+              ? "bg-[#0094CA] text-white"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
           >
             {mood}
           </button>
@@ -395,6 +413,42 @@ export default function CreateExperiencePage() {
   const [descriptionWarning, setDescriptionWarning] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
+  // Fetch exact location coordinates from Google Maps API
+  const fetchExactLocation = async (locationName: string) => {
+    try {
+      // Call our own API endpoint (which calls Nominatim server-side to avoid CORS issues)
+      const response = await fetch(
+        `/api/get-location-coordinates?q=${encodeURIComponent(locationName)}`
+      );
+
+      interface LocationResponse {
+        mapsUrl?: string;
+        display_name?: string;
+        fallback?: boolean;
+        error?: string;
+      }
+
+      const data = (await response.json()) as LocationResponse;
+
+      if (response.ok && data.mapsUrl) {
+        updateForm("googleMapsUrl", data.mapsUrl);
+        toast.success(`Location pinned: ${data.display_name ?? "Location"}`);
+      } else if (data.fallback) {
+        // Fallback to search URL if exact location not found
+        const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(locationName)}`;
+        updateForm("googleMapsUrl", mapsUrl);
+        toast.info("Using search-based location link");
+      } else {
+        throw new Error(data.error ?? "Failed to fetch location");
+      }
+    } catch (error) {
+      console.error("Location lookup error:", error);
+      // Fallback to search URL on error
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(locationName)}`;
+      updateForm("googleMapsUrl", mapsUrl);
+    }
+  };
+
   useEffect(() => {
     if (isHydrated && !userId && !hostLoading) {
       router.push("/");
@@ -439,7 +493,7 @@ export default function CreateExperiencePage() {
   /* ---------------------------------------------------------------- */
   const handleDescriptionChange = (value: string) => {
     updateForm("description", value);
-    
+
     if (value.trim().length > 0) {
       const result = checkContentSync(value);
       if (result.score > 5) {
@@ -636,16 +690,16 @@ export default function CreateExperiencePage() {
 
       <main className="min-h-screen bg-gray-50 pb-24">
         <div className="max-w-4xl mx-auto site-x py-8">
-          <Breadcrumb 
+          <Breadcrumb
             items={[
-              { label: "Home", href: "/" }, 
+              { label: "Home", href: "/" },
               { label: "Dashboard", href: "/host-dashboard" },
               { label: "Experiences", href: "/host-dashboard/experiences" },
               { label: "New" }
-            ]} 
-            className="mb-6" 
+            ]}
+            className="mb-6"
           />
-          
+
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <button
@@ -737,12 +791,234 @@ export default function CreateExperiencePage() {
               {/* Mood Selector */}
               <MoodSelector value={form.mood} onChange={(v) => updateForm("mood", v)} />
 
-              {/* Description */}
-              <div className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description <span className="text-red-500">*</span>
-                  </label>
+
+
+              {/* Visuals Section */}
+              <div className="border-t border-gray-100 pt-6">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Visuals</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <ImageUpload
+                    label="Cover Image"
+                    helpText="This will be the main image shown to guests"
+                    preview={form.coverImagePreview}
+                    onUpload={handleCoverUpload}
+                    onRemove={() => {
+                      if (form.coverImagePreview) URL.revokeObjectURL(form.coverImagePreview);
+                      updateForm("coverImage", null);
+                      updateForm("coverImagePreview", null);
+                    }}
+                  />
+                  <ImageUpload
+                    label="Gallery Images"
+                    helpText="Add more photos to showcase your experience"
+                    multiple
+                    previews={form.galleryPreviews}
+                    onUpload={handleGalleryUpload}
+                    onRemoveMultiple={removeGalleryImage}
+                  />
+                </div>
+              </div>
+
+              {/* Logistics Section */}
+              <div className="border-t border-gray-100 pt-6">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Logistics</h3>
+
+                {/* Online/In-Person Toggle */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Experience Type</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateForm("isOnline", false)}
+                      className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${!form.isOnline
+                        ? "bg-[#0094CA] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                    >
+                      <FiMapPin className="inline mr-2" size={16} />
+                      In-Person
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateForm("isOnline", true)}
+                      className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${form.isOnline
+                        ? "bg-[#0094CA] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                    >
+                      🌐 Online
+                    </button>
+                  </div>
+                </div>
+
+                {/* Meeting Link (if online) */}
+                {form.isOnline && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Meeting Link</label>
+                    <input
+                      type="url"
+                      value={form.meetingLink}
+                      onChange={(e) => updateForm("meetingLink", e.target.value)}
+                      placeholder="e.g., https://zoom.us/j/123456789"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                    <p className="text-xs text-gray-500">Paste your Zoom, Google Meet, or other video conference link</p>
+                  </div>
+                )}
+
+                {/* Location (if in-person) */}
+                {!form.isOnline && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Location</label>
+                    <input
+                      type="text"
+                      value={form.location}
+                      onChange={(e) => {
+                        const newLocation = e.target.value;
+                        updateForm("location", newLocation);
+                        
+                        // Auto-generate exact Google Maps URL with coordinates
+                        if (newLocation.trim()) {
+                          void fetchExactLocation(newLocation);
+                        }
+                      }}
+                      onBlur={() => {
+                        // If location exists but no maps URL, generate one
+                        if (form.location.trim() && !form.googleMapsUrl) {
+                          void fetchExactLocation(form.location);
+                        }
+                      }}
+                      placeholder="Enter the meeting location"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* Google Maps URL (if in-person) */}
+                {!form.isOnline && (
+                  <div className="space-y-2 mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Google Maps Link</label>
+                    <input
+                      type="url"
+                      value={form.googleMapsUrl}
+                      onChange={(e) => updateForm("googleMapsUrl", e.target.value)}
+                      placeholder="Auto-generated with exact coordinates"
+                      readOnly
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none cursor-not-allowed"
+                    />
+                    <p className="text-xs text-gray-500">Auto-filled with exact location coordinates from Google Maps</p>
+                  </div>
+                )}
+
+                {/* Duration */}
+                <div className="space-y-2 mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                  <div className="space-y-3">
+                    {/* Quick Select Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {DURATION_OPTIONS.map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => updateForm("durationMinutes", mins)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${form.durationMinutes === mins
+                            ? "bg-[#0094CA] text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                        >
+                          {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Custom Input */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={15}
+                        step={5}
+                        value={form.durationMinutes}
+                        onChange={(e) => updateForm("durationMinutes", Math.max(15, parseInt(e.target.value) || 30))}
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                        placeholder="Enter custom duration"
+                      />
+                      <span className="text-sm font-medium text-gray-600">min</span>
+                    </div>
+                    <p className="text-xs text-gray-500">Click quick options or enter custom duration (minimum 15 min)</p>
+                  </div>
+                </div>
+
+                {/* Group Size */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Min Group Size</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={form.minGroupSize}
+                      onChange={(e) => updateForm("minGroupSize", Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Max Group Size</label>
+                    <input
+                      type="number"
+                      min={form.minGroupSize}
+                      value={form.maxGroupSize}
+                      onChange={(e) => updateForm("maxGroupSize", Math.max(form.minGroupSize, parseInt(e.target.value) || 1))}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-start justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description <span className="text-red-500">*</span>
+                    </label>
+
+                  </div>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => {
+                      handleDescriptionChange(e.target.value);
+                      void descriptionSuggestions.generateSuggestions(e.target.value, 'description', {
+                        title: form.title,
+                        hookLine: form.hookLine,
+                        mood: form.mood,
+                      });
+                    }}
+                    onBlur={() => descriptionSuggestions.clearSuggestions()}
+                    placeholder="Describe what guests will experience, what they'll learn, and what makes your experience special..."
+                    rows={5}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none resize-none"
+                    maxLength={2000}
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-400">{form.description.length}/2000 characters</p>
+                  </div>
+                  {descriptionWarning && (
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${descriptionWarning.includes("⚠️")
+                      ? "bg-red-50 text-red-700 border border-red-200"
+                      : "bg-blue-50 text-blue-700 border border-blue-200"
+                      }`}>
+                      <FiAlertTriangle size={16} className="shrink-0" />
+                      <span>{descriptionWarning}</span>
+                    </div>
+                  )}
+                  {descriptionSuggestions.suggestions.length > 0 && (
+                    <SuggestionChips
+                      suggestions={descriptionSuggestions.suggestions}
+                      isLoading={descriptionSuggestions.isLoading}
+                      onSelect={(suggestion) => {
+                        const newText = form.description + " " + suggestion;
+                        handleDescriptionChange(newText);
+                        descriptionSuggestions.clearSuggestions();
+                      }}
+                      onDismiss={descriptionSuggestions.clearSuggestions}
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={async () => {
@@ -783,197 +1059,6 @@ export default function CreateExperiencePage() {
                     {isSummarizing ? 'Summarizing...' : 'Summarize'}
                   </button>
                 </div>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => {
-                    handleDescriptionChange(e.target.value);
-                    void descriptionSuggestions.generateSuggestions(e.target.value, 'description', {
-                      title: form.title,
-                      hookLine: form.hookLine,
-                      mood: form.mood,
-                    });
-                  }}
-                  onBlur={() => descriptionSuggestions.clearSuggestions()}
-                  placeholder="Describe what guests will experience, what they'll learn, and what makes your experience special..."
-                  rows={5}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none resize-none"
-                  maxLength={2000}
-                />
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-400">{form.description.length}/2000 characters</p>
-                </div>
-                {descriptionWarning && (
-                  <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                    descriptionWarning.includes("⚠️") 
-                      ? "bg-red-50 text-red-700 border border-red-200" 
-                      : "bg-blue-50 text-blue-700 border border-blue-200"
-                  }`}>
-                    <FiAlertTriangle size={16} className="shrink-0" />
-                    <span>{descriptionWarning}</span>
-                  </div>
-                )}
-                {descriptionSuggestions.suggestions.length > 0 && (
-                  <SuggestionChips
-                    suggestions={descriptionSuggestions.suggestions}
-                    isLoading={descriptionSuggestions.isLoading}
-                    onSelect={(suggestion) => {
-                      const newText = form.description + " " + suggestion;
-                      handleDescriptionChange(newText);
-                      descriptionSuggestions.clearSuggestions();
-                    }}
-                    onDismiss={descriptionSuggestions.clearSuggestions}
-                  />
-                )}
-              </div>
-
-              {/* Visuals Section */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Visuals</h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <ImageUpload
-                    label="Cover Image"
-                    helpText="This will be the main image shown to guests"
-                    preview={form.coverImagePreview}
-                    onUpload={handleCoverUpload}
-                    onRemove={() => {
-                      if (form.coverImagePreview) URL.revokeObjectURL(form.coverImagePreview);
-                      updateForm("coverImage", null);
-                      updateForm("coverImagePreview", null);
-                    }}
-                  />
-                  <ImageUpload
-                    label="Gallery Images"
-                    helpText="Add more photos to showcase your experience"
-                    multiple
-                    previews={form.galleryPreviews}
-                    onUpload={handleGalleryUpload}
-                    onRemoveMultiple={removeGalleryImage}
-                  />
-                </div>
-              </div>
-
-              {/* Logistics Section */}
-              <div className="border-t border-gray-100 pt-6">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Logistics</h3>
-
-                {/* Online/In-Person Toggle */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Experience Type</label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => updateForm("isOnline", false)}
-                      className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
-                        !form.isOnline
-                          ? "bg-[#0094CA] text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      <FiMapPin className="inline mr-2" size={16} />
-                      In-Person
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateForm("isOnline", true)}
-                      className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
-                        form.isOnline
-                          ? "bg-[#0094CA] text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      🌐 Online
-                    </button>
-                  </div>
-                </div>
-
-                {/* Meeting Link (if online) */}
-                {form.isOnline && (
-                  <div className="space-y-2 mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Meeting Link</label>
-                    <input
-                      type="url"
-                      value={form.meetingLink}
-                      onChange={(e) => updateForm("meetingLink", e.target.value)}
-                      placeholder="e.g., https://zoom.us/j/123456789"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
-                    />
-                    <p className="text-xs text-gray-500">Paste your Zoom, Google Meet, or other video conference link</p>
-                  </div>
-                )}
-
-                {/* Location (if in-person) */}
-                {!form.isOnline && (
-                  <div className="space-y-2 mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Location</label>
-                    <input
-                      type="text"
-                      value={form.location}
-                      onChange={(e) => updateForm("location", e.target.value)}
-                      placeholder="Enter the meeting location"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
-                    />
-                  </div>
-                )}
-
-                {/* Google Maps URL (if in-person) */}
-                {!form.isOnline && (
-                  <div className="space-y-2 mb-4">
-                    <label className="block text-sm font-medium text-gray-700">Google Maps Link</label>
-                    <input
-                      type="url"
-                      value={form.googleMapsUrl}
-                      onChange={(e) => updateForm("googleMapsUrl", e.target.value)}
-                      placeholder="e.g., https://maps.google.com/..."
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
-                    />
-                    <p className="text-xs text-gray-500">Share a Google Maps link so guests can view the location</p>
-                  </div>
-                )}
-
-                {/* Duration */}
-                <div className="space-y-2 mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Duration</label>
-                  <div className="flex flex-wrap gap-2">
-                    {DURATION_OPTIONS.map((mins) => (
-                      <button
-                        key={mins}
-                        type="button"
-                        onClick={() => updateForm("durationMinutes", mins)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                          form.durationMinutes === mins
-                            ? "bg-[#0094CA] text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Group Size */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Min Group Size</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={form.minGroupSize}
-                      onChange={(e) => updateForm("minGroupSize", Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Max Group Size</label>
-                    <input
-                      type="number"
-                      min={form.minGroupSize}
-                      value={form.maxGroupSize}
-                      onChange={(e) => updateForm("maxGroupSize", Math.max(form.minGroupSize, parseInt(e.target.value) || 1))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0094CA] focus:border-transparent outline-none"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Next Button */}
@@ -1010,22 +1095,20 @@ export default function CreateExperiencePage() {
                     <button
                       type="button"
                       onClick={() => updateForm("isFree", false)}
-                      className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition ${
-                        !form.isFree
-                          ? "bg-[#0094CA] text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition ${!form.isFree
+                        ? "bg-[#0094CA] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
                     >
                       Paid Experience
                     </button>
                     <button
                       type="button"
                       onClick={() => updateForm("isFree", true)}
-                      className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition ${
-                        form.isFree
-                          ? "bg-[#0094CA] text-white"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                      className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition ${form.isFree
+                        ? "bg-[#0094CA] text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
                     >
                       Free Experience
                     </button>
@@ -1130,18 +1213,16 @@ export default function CreateExperiencePage() {
                       <div
                         key={policy.value}
                         onClick={() => updateForm("cancellationPolicy", policy.value)}
-                        className={`p-4 border rounded-lg cursor-pointer transition ${
-                          form.cancellationPolicy === policy.value
-                            ? "border-[#0094CA] bg-[#0094CA]/5"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                        className={`p-4 border rounded-lg cursor-pointer transition ${form.cancellationPolicy === policy.value
+                          ? "border-[#0094CA] bg-[#0094CA]/5"
+                          : "border-gray-200 hover:border-gray-300"
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            form.cancellationPolicy === policy.value
-                              ? "border-[#0094CA]"
-                              : "border-gray-300"
-                          }`}>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${form.cancellationPolicy === policy.value
+                            ? "border-[#0094CA]"
+                            : "border-gray-300"
+                            }`}>
                             {form.cancellationPolicy === policy.value && (
                               <div className="w-2 h-2 rounded-full bg-[#0094CA]" />
                             )}
