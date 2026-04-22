@@ -13,6 +13,16 @@
   --navbar-height: 4.5rem;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    scroll-behavior: smooth;
+  }
+}
+
 .site-x {
   padding-left: var(--site-px-mobile);
   padding-right: var(--site-px-mobile);

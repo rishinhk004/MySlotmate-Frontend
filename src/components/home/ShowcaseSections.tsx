@@ -914,7 +914,11 @@ const ShowcaseSections = () => {
         </div>
       </section>
 
-      <section id="how-it-works" ref={howSectionRef} className="site-x w-full">
+      <section
+        id="how-it-works"
+        ref={howSectionRef}
+        className="site-x w-full scroll-mt-[calc(var(--navbar-height)+3rem)]"
+      >
         <div className="mx-auto w-full max-w-[1120px] py-14">
           <div className="mx-auto mb-8 max-w-[760px] text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-[#a9daf5a6] bg-white/90 px-3.5 py-2 text-[11px] font-extrabold tracking-[0.08em] text-[#4a8ab8] uppercase">
@@ -1177,7 +1181,10 @@ const ShowcaseSections = () => {
               </div>
             </div>
 
-            <div id="hosts" className="w-full">
+            <div
+              id="hosts"
+              className="w-full scroll-mt-[calc(var(--navbar-height)+3rem)]"
+            >
               <components.Home.people currentHostId={hostId} />
             </div>
 
@@ -1362,7 +1369,7 @@ const ShowcaseSections = () => {
       <section className="site-x w-full">
         <div
           ref={statsRef}
-          className="mx-auto my-[10rem] grid w-full max-w-[1120px] gap-4 border-y-2 border-[#006388] py-14 grid-cols-2 lg:grid-cols-4"
+          className="mx-auto my-16 grid w-full max-w-[1120px] grid-cols-2 gap-4 border-y-2 border-[#006388] py-14 sm:my-[10rem] lg:grid-cols-4"
         >
           {[
             { label: "Booked Sessions", suffix: "+" },
@@ -1383,7 +1390,10 @@ const ShowcaseSections = () => {
         </div>
       </section>
 
-      <section id="community" className="site-x w-full">
+      <section
+        id="community"
+        className="site-x w-full scroll-mt-[calc(var(--navbar-height)+3rem)]"
+      >
         <div className="mx-auto grid w-full max-w-[1120px] gap-5 pb-14 lg:grid-cols-[0.9fr_1.1fr]">
           <article className="rounded-[26px] bg-[linear-gradient(135deg,#109ae9,#0d85db)] p-7 text-white shadow-[0_22px_48px_rgba(18,132,214,0.22)]">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/20 px-3.5 py-2 text-[11px] font-extrabold tracking-[0.08em] uppercase">
