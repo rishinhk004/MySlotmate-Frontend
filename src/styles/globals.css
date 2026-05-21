@@ -14,7 +14,9 @@
 .rich-text-content h1,
 .rich-text-content h2,
 .rich-text-content h3 {
-  color: #16304c !important;
+  /* color is intentionally NOT !important so an inline TextStyle color
+     mark (a child <span style="color:…">) can still override it. */
+  color: #16304c;
   font-weight: 700 !important;
   line-height: 1.25 !important;
   margin: 0.6em 0 0.3em !important;
@@ -60,7 +62,8 @@
 }
 
 .rich-text-content strong {
-  color: #16304c;
+  /* No hardcoded color — bold text must inherit the surrounding color so a
+     TextStyle color mark applied to bold text actually shows. */
   font-weight: 700;
 }
 

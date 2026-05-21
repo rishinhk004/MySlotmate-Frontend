@@ -55,6 +55,8 @@ interface FormData {
   durationMinutes: number;
   minGroupSize: number;
   maxGroupSize: number;
+  languages: string[];
+  level: string;
   // Step 2 - Pricing & Schedule
   isFree: boolean;
   priceCents: number;
@@ -84,6 +86,12 @@ const MOODS = [
 ];
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
+
+// Preset languages an experience can be conducted in. Hosts may also add a
+// custom one via the "Other" input. Selection is multi-select.
+const LANGUAGE_OPTIONS = ["English", "Hindi", "Bengali", "Assamese"];
+
+const LEVEL_OPTIONS = ["Beginner Friendly", "Intermediate", "Advanced"];
 
 const CANCELLATION_POLICIES = [
   {
@@ -616,6 +624,7 @@ export default function CreateExperiencePage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitType, setSubmitType] = useState<"draft" | "publish" | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedAsDraft, setSavedAsDraft] = useState(false);
   const [createdEventId, setCreatedEventId] = useState<string>("");
@@ -648,6 +657,8 @@ export default function CreateExperiencePage() {
     durationMinutes: 60,
     minGroupSize: 1,
     maxGroupSize: 10,
+    languages: ["English"],
+    level: "Beginner Friendly",
     isFree: false,
     priceCents: 50000,
     eventDate: "",
@@ -685,6 +696,27 @@ export default function CreateExperiencePage() {
 
   const updateForm = <K extends keyof FormData>(key: K, value: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Toggle a language in/out of the multi-select list.
+  const toggleLanguage = (lang: string) => {
+    setForm((prev) => ({
+      ...prev,
+      languages: prev.languages.includes(lang)
+        ? prev.languages.filter((l) => l !== lang)
+        : [...prev.languages, lang],
+    }));
+  };
+
+  // Free-text language input for the "Other" option.
+  const [customLanguage, setCustomLanguage] = useState("");
+  const addCustomLanguage = () => {
+    const value = customLanguage.trim();
+    if (!value) return;
+    if (!form.languages.some((l) => l.toLowerCase() === value.toLowerCase())) {
+      updateForm("languages", [...form.languages, value]);
+    }
+    setCustomLanguage("");
   };
 
   /* ---------------------------------------------------------------- */
@@ -814,7 +846,7 @@ export default function CreateExperiencePage() {
       toast.error("Host credentials not found");
       return;
     }
-
+    setSubmitType(asDraft ? "draft" : "publish");
     setIsSubmitting(true);
 
     try {
@@ -881,6 +913,8 @@ export default function CreateExperiencePage() {
         capacity: form.maxGroupSize,
         min_group_size: form.minGroupSize,
         max_group_size: form.maxGroupSize,
+        languages: form.languages,
+        level: form.level || undefined,
         price_cents: form.isFree ? 0 : form.priceCents,
         is_free: form.isFree,
         is_recurring: form.isRecurring,
@@ -914,6 +948,7 @@ export default function CreateExperiencePage() {
       toast.error("Failed to create experience. Please try again.");
     } finally {
       setIsSubmitting(false);
+      setSubmitType(null);
     }
   };
 
@@ -1299,6 +1334,94 @@ export default function CreateExperiencePage() {
                   </div>
                 </div>
 
+                {/* Languages */}
+                <div className="mt-4 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Languages
+                  </label>
+                  <p className="text-xs text-gray-500">
+                    Pick every language this experience is conducted in.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {LANGUAGE_OPTIONS.map((lang) => {
+                      const selected = form.languages.includes(lang);
+                      return (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => toggleLanguage(lang)}
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                            selected
+                              ? "bg-[#0094CA] text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      );
+                    })}
+                    {/* Custom languages already added */}
+                    {form.languages
+                      .filter((l) => !LANGUAGE_OPTIONS.includes(l))
+                      .map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => toggleLanguage(lang)}
+                          className="flex items-center gap-1.5 rounded-lg bg-[#0094CA] px-4 py-2 text-sm font-medium text-white transition"
+                        >
+                          {lang}
+                          <span className="text-white/80">✕</span>
+                        </button>
+                      ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={customLanguage}
+                      onChange={(e) => setCustomLanguage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addCustomLanguage();
+                        }
+                      }}
+                      placeholder="Other language…"
+                      className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-transparent focus:ring-2 focus:ring-[#0094CA]"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomLanguage}
+                      className="rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Level */}
+                <div className="mt-4 space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Level
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {LEVEL_OPTIONS.map((lvl) => (
+                      <button
+                        key={lvl}
+                        type="button"
+                        onClick={() => updateForm("level", lvl)}
+                        className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                          form.level === lvl
+                            ? "bg-[#0094CA] text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
+                      >
+                        {lvl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Description */}
                 <div className="mt-2 space-y-2">
                   <div className="flex items-start justify-between">
@@ -1400,21 +1523,28 @@ export default function CreateExperiencePage() {
               </div>
 
               {/* Step 1 footer — draft save + continue */}
-              <div className="flex gap-3 border-t border-gray-100 pt-6">
+              <div className="flex flex-col sm:flex-row gap-4 border-t border-gray-100 pt-6">
                 <button
                   onClick={() => void handleSubmit(true)}
                   disabled={isSubmitting}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-2.5 rounded-xl border border-gray-250 bg-white py-3.5 px-6 font-semibold text-gray-700 transition duration-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isSubmitting ? "Saving…" : "Save as Draft"}
+                  {submitType === "draft" ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save as Draft</span>
+                  )}
                 </button>
                 <button
                   onClick={goToStep2}
                   disabled={isSubmitting}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#0094CA] py-3 font-semibold text-white transition hover:bg-[#007ba8] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0094CA] via-[#00a6e2] to-[#00bde5] py-3.5 px-6 font-bold text-white shadow-md shadow-[#0094CA]/15 transition-all duration-300 hover:shadow-lg hover:shadow-[#0094CA]/25 hover:-translate-y-0.5 hover:scale-[1.01] active:translate-y-0 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Continue to Schedule & Pricing
-                  <FiArrowRight />
+                  <span>Continue to Schedule & Pricing</span>
+                  <FiArrowRight size={16} />
                 </button>
               </div>
             </div>
@@ -1652,35 +1782,42 @@ export default function CreateExperiencePage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 border-t border-gray-100 pt-6">
+                <div className="flex flex-col sm:flex-row gap-4 border-t border-gray-100 pt-6">
                   <button
                     onClick={goToStep1}
-                    className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-6 py-3 font-medium text-gray-700 transition hover:bg-gray-50"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3.5 font-semibold text-gray-700 transition duration-300 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 active:scale-[0.99]"
                   >
-                    <FiArrowLeft />
-                    Back
+                    <FiArrowLeft size={16} />
+                    <span>Back</span>
                   </button>
                   <button
                     onClick={() => void handleSubmit(true)}
                     disabled={isSubmitting}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white py-3 font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex flex-1 items-center justify-center gap-2.5 rounded-xl border border-gray-250 bg-white py-3.5 px-6 font-semibold text-gray-700 transition duration-300 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-900 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Save as Draft
+                    {submitType === "draft" ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <span>Save as Draft</span>
+                    )}
                   </button>
                   <button
                     onClick={() => void handleSubmit(false)}
                     disabled={isSubmitting}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#0094CA] py-3 font-semibold text-white transition hover:bg-[#007ba8] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="relative overflow-hidden flex flex-[1.5] items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0094CA] via-[#00a6e2] to-[#00bde5] py-3.5 px-6 font-bold text-white shadow-lg shadow-[#0094CA]/20 transition-all duration-300 ease-out hover:from-[#008bbd] hover:to-[#00b0d6] hover:shadow-xl hover:shadow-[#0094CA]/30 hover:-translate-y-0.5 hover:scale-[1.01] active:translate-y-0 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                   >
-                    {isSubmitting ? (
+                    {submitType === "publish" ? (
                       <>
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Creating...
+                        <span>Publishing...</span>
                       </>
                     ) : (
                       <>
-                        <FiCheck />
-                        Publish Experience
+                        <FiCheck className="text-lg transition-transform group-hover:scale-110" size={18} />
+                        <span>Publish Experience</span>
                       </>
                     )}
                   </button>

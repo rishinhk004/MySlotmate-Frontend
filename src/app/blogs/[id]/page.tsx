@@ -3,11 +3,13 @@
 import React, { useEffect, useMemo, useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuthState } from "react-firebase-hooks/auth";
 import { FiArrowLeft } from "react-icons/fi";
 import { LuLoader2 } from "react-icons/lu";
 import { toast } from "sonner";
 import { Navbar, Home } from "~/components";
 import { useBlog, useListBlogs } from "~/hooks/useApi";
+import { auth } from "~/utils/firebase";
 import {
   BlockRenderer,
   contentToBlocks,
@@ -25,7 +27,31 @@ export default function BlogDetailPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { data: blog, isLoading, error } = useBlog(resolvedParams.id);
+
+  // Resolve the Firebase ID token so admins can open their own unpublished
+  // drafts (the backend returns 404 for drafts to anonymous visitors).
+  const [user] = useAuthState(auth);
+  const [idToken, setIdToken] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    if (!user) {
+      setIdToken(null);
+      return;
+    }
+    void user
+      .getIdToken()
+      .then((token) => {
+        if (active) setIdToken(token);
+      })
+      .catch(() => {
+        if (active) setIdToken(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const { data: blog, isLoading, error } = useBlog(resolvedParams.id, idToken);
   const { data: allBlogs = [] } = useListBlogs();
 
   const [activeTocId, setActiveTocId] = useState<string>("");

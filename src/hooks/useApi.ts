@@ -169,10 +169,25 @@ export function useListBlogs(pagination?: { limit?: number; offset?: number }) {
   });
 }
 
-export function useBlog(blogId: string | null) {
+/** Admin-only: lists every blog including unpublished drafts. Disabled until
+ *  an idToken is available. */
+export function useAdminBlogs(
+  idToken: string | null,
+  pagination?: { limit?: number; offset?: number },
+) {
   return useQuery({
-    queryKey: queryKeys.blog(blogId ?? ""),
-    queryFn: () => api.getBlog(blogId!),
+    queryKey: [...queryKeys.blogs, "admin", pagination] as const,
+    queryFn: () => api.listAdminBlogs(idToken!, pagination),
+    enabled: !!idToken,
+    staleTime: 60 * 1000,
+    select: (res) => res.data,
+  });
+}
+
+export function useBlog(blogId: string | null, idToken?: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.blog(blogId ?? ""), idToken ? "admin" : "public"],
+    queryFn: () => api.getBlog(blogId!, idToken ?? undefined),
     enabled: !!blogId,
     staleTime: 2 * 60 * 1000,
     select: (res) => res.data,

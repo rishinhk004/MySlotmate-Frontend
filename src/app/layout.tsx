@@ -205,9 +205,6 @@ export default function RootLayout({
         {/* DNS Prefetch */}
         <link rel="dns-prefetch" href="https://analytics.google.com" />
 
-        {/* Canonical URL */}
-        <link rel="canonical" href={appUrl} />
-
         {/* Additional Meta Tags for SEO */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta

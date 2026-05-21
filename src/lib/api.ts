@@ -551,9 +551,23 @@ export function listBlogs(pagination?: BlogPaginationParams) {
   return apiFetch<BlogDTO[]>("/blogs", { params: pagination });
 }
 
-/** GET /blogs/{blogID} — get a single blog by ID */
-export function getBlog(blogId: string) {
-  return apiFetch<BlogDTO>(`/blogs/${blogId}`);
+/** GET /blogs/admin — list every blog incl. drafts (admin only) */
+export function listAdminBlogs(
+  idToken: string,
+  pagination?: BlogPaginationParams,
+) {
+  return apiFetch<BlogDTO[]>("/blogs/admin", {
+    headers: getAuthHeader(idToken),
+    params: pagination,
+  });
+}
+
+/** GET /blogs/{blogID} — get a single blog by ID.
+ *  Pass idToken so admins can fetch their own unpublished drafts. */
+export function getBlog(blogId: string, idToken?: string) {
+  return apiFetch<BlogDTO>(`/blogs/${blogId}`, {
+    headers: idToken ? getAuthHeader(idToken) : undefined,
+  });
 }
 
 /** GET /blogs/category/{category} — get published blogs filtered by category */
@@ -696,6 +710,8 @@ export interface EventDTO {
   capacity: number;
   min_group_size: number | null;
   max_group_size: number | null;
+  languages: string[] | null;
+  level: string | null;
   price_cents: number | null;
   is_free: boolean;
   is_recurring: boolean;
@@ -713,6 +729,7 @@ export interface EventDTO {
   total_bookings: number;
   total_reviews: number;
   next_available_date: string | null;
+  bookings_last_week?: number;
   created_at: string;
   updated_at: string;
 }
@@ -864,6 +881,8 @@ export interface EventCreatePayload {
   capacity: number;
   min_group_size?: number;
   max_group_size?: number;
+  languages?: string[];
+  level?: string;
   price_cents?: number;
   is_free?: boolean;
   is_recurring?: boolean;
@@ -893,6 +912,8 @@ export interface EventUpdatePayload {
   capacity?: number;
   min_group_size?: number;
   max_group_size?: number;
+  languages?: string[];
+  level?: string;
   price_cents?: number;
   is_free?: boolean;
   is_recurring?: boolean;

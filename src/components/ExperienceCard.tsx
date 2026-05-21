@@ -15,9 +15,6 @@ import {
   MapPin,
   Calendar,
   ArrowRight,
-  RotateCcw,
-  Ticket,
-  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -84,7 +81,7 @@ export const getNextOccurrence = (
 
   const base = new Date(baseDate);
   if (isNaN(base.getTime())) return null;
-  
+
   // To find the NEXT occurrence after the currently full one, 
   // we start our search from the base date itself.
   const now = new Date();
@@ -228,21 +225,13 @@ export const ExperienceCard = ({
       ? "session"
       : "/slot";
 
-  // Helper to get badge content based on headline/mood
-  const getBadge = () => {
-    const text = (isRecurring ? "Recurring" : headline || "Experience").toLowerCase();
-    
-    if (text.includes("morning")) return { label: "MORNING", icon: Clock3 };
-    if (text.includes("beginner") || text.includes("friendly")) return { label: "BEGINNER FRIENDLY", icon: Star };
-    if (text.includes("social")) return { label: "SOCIAL", icon: Users };
-    if (text.includes("one-time") || !isRecurring) return { label: "ONE-TIME", icon: Ticket };
-    if (text.includes("creative")) return { label: "CREATIVE", icon: Palette };
-    if (isRecurring) return { label: "RECURRING", icon: RotateCcw };
-    
-    return { label: headline.toUpperCase() || "EXPERIENCE", icon: Star };
-  };
+  const numericRating = parseFloat(_rating || "0");
+  const isNew = isNaN(numericRating) || numericRating === 0;
 
-  const badge = getBadge();
+  const badge = {
+    label: isNew ? "NEW" : (Number.isInteger(numericRating) ? numericRating.toFixed(1) : numericRating.toString()),
+    icon: Star,
+  };
 
   // Date label split into "Tue, 12 May" + "at 8:30 PM" stack
   const renderDateLabel = (label: string) => {
@@ -275,8 +264,8 @@ export const ExperienceCard = ({
     >
       {/* Image Container - with white framing padding */}
       <div className="p-2.5 pb-0">
-        <Link 
-          href={href} 
+        <Link
+          href={href}
           className="relative block aspect-[1.55/1] w-full overflow-hidden rounded-[20px]"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -289,7 +278,7 @@ export const ExperienceCard = ({
 
           {/* Top-left Badge */}
           <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-bold tracking-wider text-[#16304c] uppercase shadow-sm">
-            <badge.icon className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <badge.icon className="h-3 w-3 text-[#f59e0b] fill-[#f59e0b]" strokeWidth={2.5} />
             {badge.label}
           </span>
 
@@ -306,8 +295,8 @@ export const ExperienceCard = ({
             >
               <Heart
                 className="h-[17px] w-[17px] transition-colors"
-                fill={isSaved ? "#16304c" : "none"}
-                stroke="#16304c"
+                fill={isSaved ? "#ef3838ff" : "none"}
+                stroke={isSaved ? "#f02f2fff" : "#16304c"}
                 strokeWidth={2.5}
               />
             </button>
@@ -316,18 +305,22 @@ export const ExperienceCard = ({
       </div>
 
       {/* Content Body */}
-      <div className="flex flex-1 flex-col px-4 pt-3 pb-3">
+      <div className="flex flex-1 flex-col px-4 pt-4 pb-4">
         {/* Location Row */}
         {location && (
-          <div className="flex items-center gap-1.5 text-[13px] font-medium text-[#16304c]">
-            <MapPin className="h-4 w-4 shrink-0 text-[#0060df]" strokeWidth={2.5} />
+          <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#16304c]">
+            <MapPin
+              className="h-4 w-4 shrink-0"
+              style={{ stroke: `url(#icon-gradient-${id ?? "default"})` }}
+              strokeWidth={2.5}
+            />
             <span className="line-clamp-1">{location}</span>
           </div>
         )}
 
         {/* Title */}
         <Link href={href} className="mt-2 block">
-          <h3 className="line-clamp-1 text-[18px] font-bold leading-tight tracking-tight text-[#16304c] transition-colors group-hover:text-[#0060df]">
+          <h3 className="line-clamp-1 text-[15px] font-bold leading-tight tracking-tight text-[#16304c] transition-colors group-hover:bg-[linear-gradient(135deg,#1fa7ff,#63ceff)] group-hover:bg-clip-text group-hover:text-transparent">
             {title}
           </h3>
         </Link>
@@ -337,11 +330,19 @@ export const ExperienceCard = ({
           {description}
         </p>
 
-        {/* Info Grid (Date & Spots) - Two Column with Divider */}
+        <svg width="0" height="0" className="absolute" aria-hidden="true">
+          <defs>
+            <linearGradient id={`icon-gradient-${id ?? "default"}`} x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#1fa7ff" offset="0%" />
+              <stop stopColor="#63ceff" offset="100%" />
+            </linearGradient>
+          </defs>
+        </svg>
         <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[#f0f4f8] pt-3">
           <div className="flex items-start gap-3">
             <Calendar
-              className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#0060df]"
+              className="mt-0.5 h-4.5 w-4.5 shrink-0"
+              style={{ stroke: `url(#icon-gradient-${id ?? "default"})` }}
               strokeWidth={2.5}
             />
             {date ? (
@@ -360,7 +361,8 @@ export const ExperienceCard = ({
 
           <div className="flex items-start gap-3 border-l border-[#f0f4f8] pl-4">
             <Users
-              className={`mt-0.5 h-4.5 w-4.5 shrink-0 ${isFull ? "text-red-500" : "text-[#0060df]"}`}
+              className={`mt-0.5 h-4.5 w-4.5 shrink-0 ${isFull ? "text-red-500" : ""}`}
+              style={!isFull ? { stroke: `url(#icon-gradient-${id ?? "default"})` } : undefined}
               strokeWidth={2.5}
             />
             {isRecurring && (isShowingNext || (isFull && !!nextDateLabel)) ? (
@@ -390,7 +392,7 @@ export const ExperienceCard = ({
 
       {/* Pricing + Book Action — light pill row */}
       <div className="mt-auto px-4 pb-3 pt-2">
-        <div className="flex items-center justify-between rounded-2xl bg-[#f3f7fc] px-3.5 py-2 ring-1 ring-[#e6eef7]">
+        <div className="flex items-center justify-between rounded-2xl bg-[#fcfdff] px-4 py-3 ring-1 ring-[#e6eef7]">
           <div className="flex items-baseline gap-1">
             <span className="text-[15px] font-bold text-[#16304c]">
               {priceAmount}
@@ -402,7 +404,7 @@ export const ExperienceCard = ({
 
           <Link
             href={href}
-            className="inline-flex items-center gap-1 rounded-md bg-[#0060df] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#004bb1] active:scale-95"
+            className="inline-flex items-center gap-1 rounded-md bg-[linear-gradient(135deg,#1fa7ff,#63ceff)] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-[#004bb1] active:scale-95"
           >
             Book Now
             <ArrowRight className="h-3 w-3" strokeWidth={2.5} />

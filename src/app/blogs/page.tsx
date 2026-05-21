@@ -15,10 +15,12 @@ import { LuLoader2 } from "react-icons/lu";
 import { toast } from "sonner";
 import * as components from "~/components";
 import {
+  useAdminBlogs,
   useCreateBlog,
   useDeleteBlog,
   useListBlogs,
   usePublishBlog,
+  useUnpublishBlog,
   useUploadBlogCover,
   useUpdateBlog,
   useUploadFiles,
@@ -483,6 +485,11 @@ function BlogCard({
             className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 rounded-[28px]"
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(22,48,76,0.02)_0%,rgba(22,48,76,0.18)_100%)] pointer-events-none rounded-[28px]" />
+          {!blog.published_at && (
+            <span className="absolute top-3 left-3 z-10 rounded-full bg-amber-500 px-2.5 py-1 text-[0.66rem] font-extrabold tracking-wide text-white uppercase shadow">
+              Draft
+            </span>
+          )}
         </div>
 
         <div className="grid content-start gap-2.5 pt-2">
@@ -630,12 +637,26 @@ export default function BlogsPage() {
     };
   }, [user?.uid]);
 
-  const { data: blogs = [], error, isLoading } = useListBlogs();
+  // Admins fetch every blog (incl. drafts); regular visitors only see published.
+  const publicBlogsQuery = useListBlogs();
+  const adminBlogsQuery = useAdminBlogs(isAdmin ? idToken : null);
+  const blogs = isAdmin
+    ? (adminBlogsQuery.data ?? [])
+    : (publicBlogsQuery.data ?? []);
+  const error = isAdmin ? adminBlogsQuery.error : publicBlogsQuery.error;
+  const isLoading = isAdmin
+    ? !idToken || adminBlogsQuery.isLoading
+    : publicBlogsQuery.isLoading;
+
+  // Which submit button was pressed: "publish" makes the post live,
+  // "draft" saves it hidden from the public.
+  const submitModeRef = useRef<"publish" | "draft">("publish");
 
   const createBlogMutation = useCreateBlog();
   const updateBlogMutation = useUpdateBlog();
   const deleteBlogMutation = useDeleteBlog();
   const publishBlogMutation = usePublishBlog();
+  const unpublishBlogMutation = useUnpublishBlog();
   const uploadBlogCoverMutation = useUploadBlogCover();
 
   const categories = useMemo(
@@ -688,6 +709,7 @@ export default function BlogsPage() {
     createBlogMutation.isPending ||
     updateBlogMutation.isPending ||
     publishBlogMutation.isPending ||
+    unpublishBlogMutation.isPending ||
     uploadBlogCoverMutation.isPending;
 
   const listErrorMessage =
@@ -842,10 +864,39 @@ export default function BlogsPage() {
       title: formState.title.trim(),
     };
 
+    const mode = submitModeRef.current;
+
     const finalizePublishState = async (
       blog: BlogDTO,
       action: "created" | "updated",
     ) => {
+      // Draft mode: keep the post hidden. If it was previously published,
+      // pull it back to draft; otherwise nothing to do.
+      if (mode === "draft") {
+        if (blog.published_at) {
+          try {
+            await unpublishBlogMutation.mutateAsync({
+              blogId: blog.id,
+              idToken,
+            });
+          } catch (unpublishError) {
+            const message =
+              unpublishError instanceof Error
+                ? unpublishError.message
+                : "Failed to move the blog to draft.";
+            setEditingBlog(blog);
+            setFormState(mapBlogToFormState(blog));
+            toast.error(
+              `Blog ${action}, but it is still published. ${message}`,
+            );
+            return;
+          }
+        }
+        toast.success(`Blog ${action} as draft.`);
+        resetForm();
+        return;
+      }
+
       if (blog.published_at) {
         toast.success(`Blog ${action}.`);
         resetForm();
@@ -1164,6 +1215,9 @@ export default function BlogsPage() {
                 <div className="flex flex-wrap items-center gap-3 pt-1">
                   <button
                     type="submit"
+                    onClick={() => {
+                      submitModeRef.current = "publish";
+                    }}
                     disabled={isSaving || !idToken}
                     className="inline-flex items-center gap-2 rounded-xl bg-[#0094CA] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#007dab] disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -1177,8 +1231,21 @@ export default function BlogsPage() {
                     {editingBlog
                       ? editingBlog.published_at
                         ? "Save Changes"
-                        : "Save & Publish"
-                      : "Create Blog"}
+                        : "Publish Blog"
+                      : "Publish Blog"}
+                  </button>
+
+                  <button
+                    type="submit"
+                    onClick={() => {
+                      submitModeRef.current = "draft";
+                    }}
+                    disabled={isSaving || !idToken}
+                    className="inline-flex items-center gap-2 rounded-xl border border-[#cceeff] bg-[#f0faff] px-5 py-3 text-sm font-semibold text-[#0094CA] transition hover:bg-[#e6f6ff] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {editingBlog?.published_at
+                      ? "Move to Draft"
+                      : "Save as Draft"}
                   </button>
 
                   {!idToken && (
@@ -1279,6 +1346,11 @@ export default function BlogsPage() {
                         alt={getBlogValue(featuredBlog.title, "Featured story")}
                         className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105 rounded-[28px]"
                       />
+                      {!featuredBlog.published_at && (
+                        <span className="absolute top-4 left-4 z-10 rounded-full bg-amber-500 px-3 py-1 text-[0.7rem] font-extrabold tracking-wide text-white uppercase shadow">
+                          Draft
+                        </span>
+                      )}
                     </div>
                   </section>
                 );
