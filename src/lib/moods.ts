@@ -17,6 +17,11 @@ const moodAliasMap: Record<string, string> = {
   romantic: "romantic",
   intellectual: "intellectual",
   nightlife: "nightlife",
+  fashion: "fashion",
+  style: "fashion",
+  fitness: "fitness",
+  family: "family",
+  kids: "family",
 };
 
 const moodDisplayMap: Record<string, string> = {
@@ -33,6 +38,9 @@ const moodDisplayMap: Record<string, string> = {
   romantic: "Romantic",
   intellectual: "Intellectual",
   nightlife: "Nightlife",
+  fashion: "Fashion",
+  fitness: "Fitness",
+  family: "Family",
 };
 
 const moodSortOrder = [
@@ -45,6 +53,9 @@ const moodSortOrder = [
   "educational",
   "culinary",
   "cultural",
+  "fashion",
+  "fitness",
+  "family",
   "foodie",
   "romantic",
   "intellectual",

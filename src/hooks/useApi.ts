@@ -1049,10 +1049,12 @@ export function useCancelBooking() {
     mutationFn: ({
       bookingId,
       userId,
+      refundDestination,
     }: {
       bookingId: string;
       userId: string;
-    }) => api.cancelBooking(bookingId, userId),
+      refundDestination?: "wallet" | "source";
+    }) => api.cancelBooking(bookingId, userId, refundDestination ?? "wallet"),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["bookingsByUser"] });
       // Refresh event queries since booking status changed
@@ -1269,6 +1271,20 @@ export function useWalletBalance(userId: string | null) {
     queryFn: () => api.getWalletBalance(userId!),
     enabled: !!userId,
     staleTime: 30 * 1000,
+    select: (res) => res.data,
+  });
+}
+
+export function useWalletTransactions(
+  userId: string | null,
+  limit = 50,
+  offset = 0,
+) {
+  return useQuery({
+    queryKey: ["walletTransactions", userId ?? "", limit, offset] as const,
+    queryFn: () => api.getWalletTransactions(userId!, limit, offset),
+    enabled: !!userId,
+    staleTime: 15 * 1000,
     select: (res) => res.data,
   });
 }

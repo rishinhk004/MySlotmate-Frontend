@@ -7,7 +7,10 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {
   images: {
-    domains: ["myslotmate.s3.us-east-2.amazonaws.com"],
+    domains: [
+      "myslotmate.s3.us-east-2.amazonaws.com",
+      "myslotmates3.s3.eu-north-1.amazonaws.com",
+    ],
   },
   async redirects() {
     return [

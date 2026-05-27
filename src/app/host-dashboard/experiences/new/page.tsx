@@ -16,7 +16,7 @@ import { useContentModeration } from "~/hooks/useContentModeration";
 import { useSuggestions } from "~/hooks/useSuggestions";
 import { useDragDrop } from "~/hooks/useDragDrop";
 import { SuggestionChips } from "~/components/SuggestionChips";
-import { RichTextEditor } from "~/components/RichTextEditor";
+import { RichTextEditor, RichTextView } from "~/components/RichTextEditor";
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -31,7 +31,15 @@ import {
   FiExternalLink,
   FiAlertTriangle,
   FiMap,
+  FiStar,
+  FiBookmark,
+  FiChevronDown,
+  FiUser,
+  FiMessageCircle,
+  FiShield,
 } from "react-icons/fi";
+import { LuLanguages, LuBadgeCheck, LuSparkles, LuTicket } from "react-icons/lu";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { MapPickerModal, LocationSearchInput } from "~/components";
 
@@ -82,7 +90,15 @@ function getGeneratedDescription(value: unknown): string | null {
 }
 
 const MOODS = [
-  "Adventure", //, "Relaxing", "Creative", "Social", "Educational", "Wellness", "Culinary", "Cultural"
+  "Adventure",
+  "Social",
+  "Wellness",
+  "Creative",
+  "Culinary",
+  "Cultural",
+  "Fashion",
+  "Fitness",
+  "Family",
 ];
 
 const DURATION_OPTIONS = [30, 60, 90, 120, 180, 240];
@@ -285,11 +301,10 @@ function ImageUpload({
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition ${
-            isDragging
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition ${isDragging
               ? "scale-105 border-[#0094CA] bg-[#0094CA]/5"
               : "border-gray-300 hover:border-[#0094CA] hover:bg-gray-50"
-          }`}
+            }`}
         >
           <FiUpload
             className={`mx-auto mb-2 transition ${isDragging ? "text-[#0094CA]" : "text-gray-400"}`}
@@ -346,11 +361,10 @@ function MoodSelector({
             key={mood}
             type="button"
             onClick={() => onChange(mood.toLowerCase())}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-              value === mood.toLowerCase()
+            className={`rounded-full px-4 py-2 text-sm font-medium transition ${value === mood.toLowerCase()
                 ? "bg-[#0094CA] text-white"
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-            }`}
+              }`}
           >
             {mood}
           </button>
@@ -429,13 +443,11 @@ function TitleAutocomplete({
               ? "Pick a mood first to see suggestions"
               : "Start typing — or pick a suggestion below"
           }
-          className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${
-            moodDisabled ? "cursor-not-allowed bg-gray-50 text-gray-400" : ""
-          } ${
-            hasError
+          className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${moodDisabled ? "cursor-not-allowed bg-gray-50 text-gray-400" : ""
+            } ${hasError
               ? "border-red-500 bg-red-50"
               : "border-gray-200 focus:border-transparent"
-          }`}
+            }`}
           maxLength={100}
         />
 
@@ -480,52 +492,214 @@ function TitleAutocomplete({
 /*  Preview Card Component                                             */
 /* ------------------------------------------------------------------ */
 function PreviewCard({ form }: { form: FormData }) {
+  const cancellationCopy =
+    form.cancellationPolicy === "flexible"
+      ? "Free cancellation up to 24 hours before the experience."
+      : form.cancellationPolicy === "moderate"
+        ? "Free cancellation up to 5 days before the experience."
+        : form.cancellationPolicy === "strict"
+          ? "50% refund up to 1 week before the experience."
+          : form.cancellationPolicy === "no_refund"
+            ? "This experience is non-refundable once booked."
+            : "Standard cancellation policy applies.";
+
+  const cancellationBadge =
+    form.cancellationPolicy === "flexible"
+      ? { label: "Flexible", sub: "cancellation" }
+      : form.cancellationPolicy === "moderate"
+        ? { label: "Moderate", sub: "cancellation" }
+        : form.cancellationPolicy === "strict"
+          ? { label: "Strict", sub: "cancellation" }
+          : form.cancellationPolicy === "no_refund"
+            ? { label: "No refunds", sub: "policy" }
+            : { label: "Standard", sub: "policy" };
+
+  const getFormattedDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return dateStr;
+    const year = parseInt(parts[0]!, 10);
+    const month = parseInt(parts[1]!, 10) - 1;
+    const day = parseInt(parts[2]!, 10);
+    const dateObj = new Date(year, month, day);
+    return format(dateObj, "eee d");
+  };
+
+  const getFormattedTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    const parts = timeStr.split(":");
+    if (parts.length < 2) return timeStr;
+    const hours = parseInt(parts[0]!, 10);
+    const minutes = parseInt(parts[1]!, 10);
+    const dateObj = new Date(2000, 0, 1, hours, minutes);
+    return format(dateObj, "h:mm a");
+  };
+
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="relative">
-        {form.coverImagePreview ? (
-          <Image
-            src={form.coverImagePreview}
-            alt="Preview"
-            width={400}
-            height={160}
-            loading="lazy"
-            className="h-40 w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-40 w-full items-center justify-center bg-linear-to-br from-gray-100 to-gray-200">
-            <span className="text-sm text-gray-400">No image uploaded</span>
+    <div className="sticky top-20 h-max w-full pl-4 max-w-[420px] mx-auto lg:ml-auto select-none">
+      <div className="relative overflow-hidden rounded-3xl border border-[#cfe8fa] bg-gradient-to-br from-white via-[#f4faff] to-[#e9f5ff] p-5 shadow-[0_24px_60px_rgba(58,119,172,0.12)]">
+        {/* Header */}
+        <div className="mb-3 flex items-start gap-2.5">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-[#cfe8fa] bg-white shadow-[0_8px_20px_rgba(31,167,255,0.18)]">
+            <LuTicket className="h-4 w-4 -rotate-12 text-[#0094CA]" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-outfit text-xl font-extrabold leading-none tracking-tight text-[#16304c]">
+              {form.isFree ? (
+                "FREE EXPERIENCE"
+              ) : (
+                <>
+                  ₹{((form.priceCents ?? 0) / 100).toFixed(0)}
+                  <span className="text-sm font-medium text-[#6f8daa]">
+                    /person
+                  </span>
+                </>
+              )}
+            </h2>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#5f7e9a]">
+              Hosted by verified host
+              <LuBadgeCheck
+                className="h-3.5 w-3.5 text-[#0094CA]"
+                fill="#0094CA"
+                stroke="#ffffff"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="mb-3 flex items-center justify-start gap-4 border-b border-[#dbeaf5] pb-3 text-xs">
+          <div className="flex items-center gap-2">
+            <FiStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-bold text-[#16304c]">4.8</span>
+            <span className="text-[#6f8daa]">(128 reviews)</span>
+          </div>
+          <div className="h-4 w-px bg-[#dbeaf5]" />
+          <div className="flex items-center gap-2">
+            <FiUsers className="h-4 w-4 text-[#0094CA]" />
+            <span className="font-bold text-[#16304c]">45</span>
+            <span className="text-[#6f8daa]">people joined</span>
+          </div>
+        </div>
+
+        {/* Choose Your Session */}
+        <div className="mb-3">
+          <div className="flex items-center gap-1.5">
+            <FiCalendar className="h-4 w-4 text-[#0094CA]" />
+            <h3 className="text-sm font-bold text-[#16304c]">
+              Choose your session
+            </h3>
+          </div>
+          <p className="mb-4 ml-[22px] text-[11px] leading-tight text-[#6f8daa]">
+            Pick a time 
+          </p>
+
+          {form.eventDate ? (
+            <div className="flex w-full items-center gap-2.5 rounded-2xl border-2 border-transparent bg-gradient-to-br from-[#1fa7ff] to-[#0094CA] px-3.5 py-2.5 text-left text-white shadow-[0_14px_30px_rgba(31,167,255,0.35)]">
+              <FiClock className="h-4 w-4 flex-shrink-0 text-white/90" />
+              <div className="flex flex-1 items-baseline gap-2">
+                <span className="text-sm font-bold">
+                  {getFormattedDate(form.eventDate)},
+                </span>
+                <span className="text-sm text-white/90">
+                  {form.eventTime ? getFormattedTime(form.eventTime) : "Time TBD"}
+                </span>
+              </div>
+              <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white">
+                <FiCheck className="h-3 w-3 stroke-[3] text-[#0094CA]" />
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-[#dbeaf5] bg-white px-4 py-3 text-sm text-[#6f8daa] italic">
+              No upcoming sessions
+            </div>
+          )}
+        </div>
+
+        {/* Guests */}
+        <div className="mb-3">
+          <div className="flex items-center gap-1.5">
+            <FiUser className="h-4 w-4 text-[#0094CA]" />
+            <h3 className="text-sm font-bold text-[#16304c]">Guests</h3>
+          </div>
+          <p className="mb-2 ml-[22px] text-[11px] leading-tight text-[#6f8daa]">
+            How many are joining?
+          </p>
+          <div className="relative">
+            <div className="w-full rounded-2xl border border-[#dbeaf5] bg-white px-3.5 py-2.5 pr-10 text-sm font-medium text-[#16304c] outline-none flex justify-between items-center">
+              <span>1 Guest</span>
+              <FiChevronDown className="h-4 w-4 text-[#6f8daa]" />
+            </div>
+          </div>
+        </div>
+
+        {/* Reserve Button Mock */}
+        <button
+          type="button"
+          disabled
+          className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1fa7ff] to-[#0094CA] py-2.5 text-sm font-semibold text-white shadow-[0_16px_32px_rgba(31,167,255,0.32)] opacity-50 cursor-not-allowed"
+        >
+          <span>Reserve My Spot</span>
+          <FiArrowRight className="h-4 w-4" />
+        </button>
+
+        {/* Trust Badges */}
+        <div className="mt-3 grid grid-cols-3 gap-1 border-t border-[#dbeaf5] pt-3">
+          <div className="flex flex-col items-center gap-1 px-1 text-center">
+            <FiShield className="h-4 w-4 text-[#0094CA]" />
+            <span className="text-[10px] leading-tight font-semibold text-[#16304c]">
+              {cancellationBadge.label}
+              <br />
+              {cancellationBadge.sub}
+            </span>
+          </div>
+          <div className="flex flex-col items-center gap-1 border-x border-[#dbeaf5] px-1 text-center">
+            <FiStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-[10px] leading-tight font-semibold text-[#16304c]">
+              Verified
+              <br />
+              host
+            </span>
+          </div>
+          <div className="flex flex-col items-center gap-1 px-1 text-center">
+            <FiMessageCircle className="h-4 w-4 text-[#0094CA]" />
+            <span className="text-[10px] leading-tight font-semibold text-[#16304c]">
+              Instant
+              <br />
+              confirmation
+            </span>
+          </div>
+        </div>
+
+        {/* Footer Note */}
+        <div className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-[#5f7e9a]">
+          <svg
+            aria-hidden
+            viewBox="0 0 24 24"
+            className="h-3.5 w-3.5 flex-shrink-0 text-[#5fc781]"
+          >
+            <path
+              fill="currentColor"
+              d="M17 3c-4 0-9 3-11 9-1.4 4.2.4 7.4 3 9 2-5 5.5-8 10-9-3 2-5 5-6 9 5 0 9-4 9-9V3h-5Z"
+            />
+          </svg>
+          <span>{cancellationCopy}</span>
+        </div>
+
+        {/* Rare find banner */}
+        {form.maxGroupSize <= 3 && (
+          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-red-100 bg-red-50 p-3">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-red-500">
+              <LuSparkles className="text-white" size={12} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-red-600">Rare find</p>
+              <p className="text-xs text-red-500">
+                Only {form.maxGroupSize} spot{form.maxGroupSize > 1 ? "s" : ""} left!
+              </p>
+            </div>
           </div>
         )}
-        <div className="absolute top-2 right-2 rounded-full bg-white/90 px-2 py-1 text-xs font-semibold backdrop-blur">
-          {form.mood || "No mood"}
-        </div>
-      </div>
-      <div className="p-4">
-        <h3 className="mb-1 font-semibold text-gray-900">
-          {form.title || "Experience Title"}
-        </h3>
-        <p className="mb-3 line-clamp-2 text-sm text-gray-500">
-          {form.hookLine || "Add a hook line to attract guests"}
-        </p>
-        <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <FiClock size={12} />
-            {form.durationMinutes} min
-          </span>
-          <span className="flex items-center gap-1">
-            <FiUsers size={12} />
-            {form.minGroupSize}-{form.maxGroupSize} guests
-          </span>
-        </div>
-        <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
-          <span className="font-semibold text-[#0094CA]">
-            {form.isFree ? "Free" : `₹${(form.priceCents / 100).toFixed(0)}`}
-          </span>
-          <span className="text-xs text-gray-400">
-            {form.isOnline ? "Online" : form.location || "Location TBD"}
-          </span>
-        </div>
       </div>
     </div>
   );
@@ -553,9 +727,8 @@ function SuccessModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="animate-in fade-in zoom-in w-full max-w-md rounded-2xl bg-white p-8 text-center duration-200">
         <div
-          className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
-            isDraft ? "bg-gray-100" : "bg-green-100"
-          }`}
+          className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${isDraft ? "bg-gray-100" : "bg-green-100"
+            }`}
         >
           <FiCheck
             className={isDraft ? "text-gray-500" : "text-green-600"}
@@ -668,6 +841,52 @@ export default function CreateExperiencePage() {
     recurrenceRule: "",
     cancellationPolicy: "flexible",
   });
+
+  // Local string trackers for controlled numeric inputs to avoid leading-zero/clearing issues
+  const [priceInputStr, setPriceInputStr] = useState<string>(form.isFree ? "" : (form.priceCents / 100).toString());
+  const [durationInputStr, setDurationInputStr] = useState<string>(form.durationMinutes.toString());
+  const [minGroupInputStr, setMinGroupInputStr] = useState<string>(form.minGroupSize.toString());
+  const [maxGroupInputStr, setMaxGroupInputStr] = useState<string>(form.maxGroupSize.toString());
+
+  useEffect(() => {
+    if (form.isFree) {
+      setPriceInputStr("");
+    } else {
+      const formVal = form.priceCents / 100;
+      if (priceInputStr !== "" && parseFloat(priceInputStr) !== formVal) {
+        setPriceInputStr(formVal.toString());
+      } else if (priceInputStr === "" && formVal !== 0) {
+        setPriceInputStr(formVal.toString());
+      }
+    }
+  }, [form.priceCents, form.isFree]);
+
+  useEffect(() => {
+    const formVal = form.durationMinutes;
+    if (durationInputStr !== "" && parseInt(durationInputStr) !== formVal) {
+      setDurationInputStr(formVal.toString());
+    } else if (durationInputStr === "" && formVal !== 0) {
+      setDurationInputStr(formVal.toString());
+    }
+  }, [form.durationMinutes]);
+
+  useEffect(() => {
+    const formVal = form.minGroupSize;
+    if (minGroupInputStr !== "" && parseInt(minGroupInputStr) !== formVal) {
+      setMinGroupInputStr(formVal.toString());
+    } else if (minGroupInputStr === "" && formVal !== 0) {
+      setMinGroupInputStr(formVal.toString());
+    }
+  }, [form.minGroupSize]);
+
+  useEffect(() => {
+    const formVal = form.maxGroupSize;
+    if (maxGroupInputStr !== "" && parseInt(maxGroupInputStr) !== formVal) {
+      setMaxGroupInputStr(formVal.toString());
+    } else if (maxGroupInputStr === "" && formVal !== 0) {
+      setMaxGroupInputStr(formVal.toString());
+    }
+  }, [form.maxGroupSize]);
 
   useEffect(() => {
     setUserId(localStorage.getItem("msm_user_id"));
@@ -1076,11 +1295,10 @@ export default function CreateExperiencePage() {
                   }}
                   onBlur={() => hookSuggestions.clearSuggestions()}
                   placeholder="A short catchy phrase to attract guests"
-                  className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${
-                    showErrors && !form.hookLine.trim()
+                  className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${showErrors && !form.hookLine.trim()
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200 focus:border-transparent"
-                  }`}
+                    }`}
                   maxLength={150}
                 />
                 <p className="text-xs text-gray-400">
@@ -1143,11 +1361,10 @@ export default function CreateExperiencePage() {
                     <button
                       type="button"
                       onClick={() => updateForm("isOnline", false)}
-                      className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                        !form.isOnline
+                      className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${!form.isOnline
                           ? "bg-[#0094CA] text-white"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       <FiMapPin className="mr-2 inline" size={16} />
                       In-Person
@@ -1155,11 +1372,10 @@ export default function CreateExperiencePage() {
                     <button
                       type="button"
                       onClick={() => updateForm("isOnline", true)}
-                      className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                        form.isOnline
+                      className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${form.isOnline
                           ? "bg-[#0094CA] text-white"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       🌐 Online
                     </button>
@@ -1256,11 +1472,10 @@ export default function CreateExperiencePage() {
                           key={mins}
                           type="button"
                           onClick={() => updateForm("durationMinutes", mins)}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                            form.durationMinutes === mins
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${form.durationMinutes === mins
                               ? "bg-[#0094CA] text-white"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
+                            }`}
                         >
                           {mins >= 60 ? `${mins / 60}h` : `${mins}m`}
                         </button>
@@ -1269,16 +1484,33 @@ export default function CreateExperiencePage() {
                     {/* Custom Input */}
                     <div className="flex items-center gap-2">
                       <input
-                        type="number"
-                        min={15}
-                        step={5}
-                        value={form.durationMinutes}
-                        onChange={(e) =>
-                          updateForm(
-                            "durationMinutes",
-                            Math.max(15, parseInt(e.target.value) || 30),
-                          )
-                        }
+                        type="text"
+                        inputMode="numeric"
+                        value={durationInputStr}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*$/.test(val)) {
+                            setDurationInputStr(val);
+                            if (val === "") {
+                              updateForm("durationMinutes", 0);
+                            } else {
+                              const parsed = parseInt(val, 10);
+                              if (!isNaN(parsed)) {
+                                updateForm("durationMinutes", parsed);
+                              }
+                            }
+                          }
+                        }}
+                        onBlur={() => {
+                          const parsed = parseInt(durationInputStr, 10);
+                          if (isNaN(parsed) || parsed < 15) {
+                            setDurationInputStr("15");
+                            updateForm("durationMinutes", 15);
+                          } else {
+                            setDurationInputStr(parsed.toString());
+                            updateForm("durationMinutes", parsed);
+                          }
+                        }}
                         className="flex-1 rounded-lg border border-gray-200 px-4 py-3 outline-none focus:border-transparent focus:ring-2 focus:ring-[#0094CA]"
                         placeholder="Enter custom duration"
                       />
@@ -1300,15 +1532,33 @@ export default function CreateExperiencePage() {
                       Min Group Size
                     </label>
                     <input
-                      type="number"
-                      min={1}
-                      value={form.minGroupSize}
-                      onChange={(e) =>
-                        updateForm(
-                          "minGroupSize",
-                          Math.max(1, parseInt(e.target.value) || 1),
-                        )
-                      }
+                      type="text"
+                      inputMode="numeric"
+                      value={minGroupInputStr}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || /^\d*$/.test(val)) {
+                          setMinGroupInputStr(val);
+                          if (val === "") {
+                            updateForm("minGroupSize", 0);
+                          } else {
+                            const parsed = parseInt(val, 10);
+                            if (!isNaN(parsed)) {
+                              updateForm("minGroupSize", parsed);
+                            }
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        const parsed = parseInt(minGroupInputStr, 10);
+                        if (isNaN(parsed) || parsed < 1) {
+                          setMinGroupInputStr("1");
+                          updateForm("minGroupSize", 1);
+                        } else {
+                          setMinGroupInputStr(parsed.toString());
+                          updateForm("minGroupSize", parsed);
+                        }
+                      }}
                       className="w-full rounded-lg border border-gray-200 px-4 py-3 outline-none focus:border-transparent focus:ring-2 focus:ring-[#0094CA]"
                     />
                   </div>
@@ -1317,18 +1567,34 @@ export default function CreateExperiencePage() {
                       Max Group Size
                     </label>
                     <input
-                      type="number"
-                      min={form.minGroupSize}
-                      value={form.maxGroupSize}
-                      onChange={(e) =>
-                        updateForm(
-                          "maxGroupSize",
-                          Math.max(
-                            form.minGroupSize,
-                            parseInt(e.target.value) || 1,
-                          ),
-                        )
-                      }
+                      type="text"
+                      inputMode="numeric"
+                      value={maxGroupInputStr}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || /^\d*$/.test(val)) {
+                          setMaxGroupInputStr(val);
+                          if (val === "") {
+                            updateForm("maxGroupSize", 0);
+                          } else {
+                            const parsed = parseInt(val, 10);
+                            if (!isNaN(parsed)) {
+                              updateForm("maxGroupSize", parsed);
+                            }
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        const parsed = parseInt(maxGroupInputStr, 10);
+                        const minVal = form.minGroupSize || 1;
+                        if (isNaN(parsed) || parsed < minVal) {
+                          setMaxGroupInputStr(minVal.toString());
+                          updateForm("maxGroupSize", minVal);
+                        } else {
+                          setMaxGroupInputStr(parsed.toString());
+                          updateForm("maxGroupSize", parsed);
+                        }
+                      }}
                       className="w-full rounded-lg border border-gray-200 px-4 py-3 outline-none focus:border-transparent focus:ring-2 focus:ring-[#0094CA]"
                     />
                   </div>
@@ -1350,11 +1616,10 @@ export default function CreateExperiencePage() {
                           key={lang}
                           type="button"
                           onClick={() => toggleLanguage(lang)}
-                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                            selected
+                          className={`rounded-lg px-4 py-2 text-sm font-medium transition ${selected
                               ? "bg-[#0094CA] text-white"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                          }`}
+                            }`}
                         >
                           {lang}
                         </button>
@@ -1410,11 +1675,10 @@ export default function CreateExperiencePage() {
                         key={lvl}
                         type="button"
                         onClick={() => updateForm("level", lvl)}
-                        className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                          form.level === lvl
+                        className={`rounded-lg px-4 py-2 text-sm font-medium transition ${form.level === lvl
                             ? "bg-[#0094CA] text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                          }`}
                       >
                         {lvl}
                       </button>
@@ -1457,11 +1721,10 @@ export default function CreateExperiencePage() {
                   </div>
                   {descriptionWarning && (
                     <div
-                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
-                        descriptionWarning.includes("⚠️")
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${descriptionWarning.includes("⚠️")
                           ? "border border-red-200 bg-red-50 text-red-700"
                           : "border border-blue-200 bg-blue-50 text-blue-700"
-                      }`}
+                        }`}
                     >
                       <FiAlertTriangle size={16} className="shrink-0" />
                       <span>{descriptionWarning}</span>
@@ -1552,9 +1815,9 @@ export default function CreateExperiencePage() {
 
           {/* Step 2: Schedule & Pricing */}
           {currentStep === 2 && (
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-12">
               {/* Form Section */}
-              <div className="max-h-[calc(100vh-200px)] space-y-6 overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm [scrollbar-width:none] lg:col-span-2 [&::-webkit-scrollbar]:hidden">
+              <div className="max-h-[calc(100vh-200px)] space-y-6 overflow-y-auto rounded-xl border border-gray-200 bg-white p-6 shadow-sm [scrollbar-width:none] lg:col-span-7 [&::-webkit-scrollbar]:hidden">
                 <div className="border-b border-gray-100 pb-4">
                   <h2 className="text-lg font-semibold text-gray-900">
                     Schedule & Pricing
@@ -1576,22 +1839,20 @@ export default function CreateExperiencePage() {
                     <button
                       type="button"
                       onClick={() => updateForm("isFree", false)}
-                      className={`flex-1 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        !form.isFree
+                      className={`flex-1 rounded-lg px-4 py-3 text-sm font-medium transition ${!form.isFree
                           ? "bg-[#0094CA] text-white"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       Paid Experience
                     </button>
                     <button
                       type="button"
                       onClick={() => updateForm("isFree", true)}
-                      className={`flex-1 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                        form.isFree
+                      className={`flex-1 rounded-lg px-4 py-3 text-sm font-medium transition ${form.isFree
                           ? "bg-[#0094CA] text-white"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       Free Experience
                     </button>
@@ -1608,21 +1869,37 @@ export default function CreateExperiencePage() {
                           ₹
                         </span>
                         <input
-                          type="number"
-                          min={0}
-                          value={form.priceCents / 100}
-                          onChange={(e) =>
-                            updateForm(
-                              "priceCents",
-                              Math.max(0, parseFloat(e.target.value) || 0) *
-                                100,
-                            )
-                          }
-                          className={`w-full rounded-lg border py-3 pr-4 pl-8 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${
-                            showErrors && !form.isFree && form.priceCents <= 0
+                          type="text"
+                          inputMode="decimal"
+                          value={priceInputStr}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                              setPriceInputStr(val);
+                              if (val === "") {
+                                updateForm("priceCents", 0);
+                              } else {
+                                const parsed = parseFloat(val);
+                                if (!isNaN(parsed)) {
+                                  updateForm("priceCents", Math.round(parsed * 100));
+                                }
+                              }
+                            }
+                          }}
+                          onBlur={() => {
+                            const parsed = parseFloat(priceInputStr);
+                            if (isNaN(parsed) || parsed < 0) {
+                              setPriceInputStr("0");
+                              updateForm("priceCents", 0);
+                            } else {
+                              setPriceInputStr(parsed.toString());
+                              updateForm("priceCents", Math.round(parsed * 100));
+                            }
+                          }}
+                          className={`w-full rounded-lg border py-3 pr-4 pl-8 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${showErrors && !form.isFree && form.priceCents <= 0
                               ? "border-red-500 bg-red-50"
                               : "border-gray-200 focus:border-transparent"
-                          }`}
+                            }`}
                         />
                       </div>
                       <p className="text-xs text-gray-500">
@@ -1651,11 +1928,10 @@ export default function CreateExperiencePage() {
                           updateForm("eventDate", e.target.value)
                         }
                         min={new Date().toISOString().split("T")[0]}
-                        className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${
-                          showErrors && !form.eventDate
+                        className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${showErrors && !form.eventDate
                             ? "border-red-500 bg-red-50"
                             : "border-gray-200 focus:border-transparent"
-                        }`}
+                          }`}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1668,11 +1944,10 @@ export default function CreateExperiencePage() {
                         onChange={(e) =>
                           updateForm("eventTime", e.target.value)
                         }
-                        className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${
-                          showErrors && !form.eventTime
+                        className={`w-full rounded-lg border px-4 py-3 transition outline-none focus:ring-2 focus:ring-[#0094CA] ${showErrors && !form.eventTime
                             ? "border-red-500 bg-red-50"
                             : "border-gray-200 focus:border-transparent"
-                        }`}
+                          }`}
                       />
                     </div>
                   </div>
@@ -1749,19 +2024,17 @@ export default function CreateExperiencePage() {
                         onClick={() =>
                           updateForm("cancellationPolicy", policy.value)
                         }
-                        className={`cursor-pointer rounded-lg border p-4 transition ${
-                          form.cancellationPolicy === policy.value
+                        className={`cursor-pointer rounded-lg border p-4 transition ${form.cancellationPolicy === policy.value
                             ? "border-[#0094CA] bg-[#0094CA]/5"
                             : "border-gray-200 hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
-                              form.cancellationPolicy === policy.value
+                            className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${form.cancellationPolicy === policy.value
                                 ? "border-[#0094CA]"
                                 : "border-gray-300"
-                            }`}
+                              }`}
                           >
                             {form.cancellationPolicy === policy.value && (
                               <div className="h-2 w-2 rounded-full bg-[#0094CA]" />
@@ -1825,7 +2098,7 @@ export default function CreateExperiencePage() {
               </div>
 
               {/* Preview Card Sidebar */}
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-5">
                 <div className="sticky top-24">
                   <h3 className="mb-4 text-sm font-semibold text-gray-500 uppercase">
                     Preview

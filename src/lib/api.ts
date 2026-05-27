@@ -1036,11 +1036,19 @@ export function confirmBooking(bookingId: string) {
   });
 }
 
-/** POST /bookings/{bookingID}/cancel — cancel a booking */
-export function cancelBooking(bookingId: string, userId: string) {
+/** POST /bookings/{bookingID}/cancel — cancel a booking.
+ *  refundDestination defaults to "wallet" — money goes back to the user's
+ *  wallet only. Pass "source" to also chain a Razorpay refund back to the
+ *  original card/UPI (best-effort: if no refundable top-up exists or Razorpay
+ *  rejects, the wallet refund stands and the booking is still cancelled). */
+export function cancelBooking(
+  bookingId: string,
+  userId: string,
+  refundDestination: "wallet" | "source" = "wallet",
+) {
   return apiFetch<BookingDTO>(`/bookings/${bookingId}/cancel`, {
     method: "POST",
-    data: { user_id: userId },
+    data: { user_id: userId, refund_destination: refundDestination },
   });
 }
 
@@ -1097,8 +1105,24 @@ export interface PaymentDTO {
   last_error: string | null;
   payout_method_id: string | null;
   display_reference: string | null;
+  gateway_order_id?: string | null;       // Razorpay order_xxxxx
+  gateway_payment_id?: string | null;     // Razorpay pay_xxxxx
+  gateway_refund_id?: string | null;      // Razorpay rfnd_xxxxx — set on source refunds
+  refund_of_payment_id?: string | null;   // the top-up this refund went against (source refund)
   created_at: string;
   updated_at: string;
+}
+
+/** GET /users/wallet/transactions — user's wallet payment history.
+ *  Returns top-ups, bookings, and refunds (both wallet and source). Newest first. */
+export function getWalletTransactions(
+  userId: string,
+  limit = 50,
+  offset = 0,
+) {
+  return apiFetch<PaymentDTO[]>(
+    `/users/wallet/transactions?user_id=${userId}&limit=${limit}&offset=${offset}`,
+  );
 }
 
 /** POST /payouts/methods — add a payout method */

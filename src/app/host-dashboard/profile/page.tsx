@@ -316,9 +316,14 @@ export default function HostProfileEditPage() {
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="text-sm font-semibold text-[#0094CA] hover:underline disabled:opacity-50"
+                    className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0094CA] to-[#00bde5] px-4 py-2 text-sm font-bold text-white shadow-sm shadow-[#0094CA]/20 transition-all duration-200 hover:from-[#008bbd] hover:to-[#00b0d6] hover:shadow-md hover:shadow-[#0094CA]/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                   >
-                    {saving ? "Saving..." : "Save Changes"}
+                    {saving ? (
+                      <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <FiCheck className="h-4 w-4" />
+                    )}
+                    <span>{saving ? "Saving..." : "Save Changes"}</span>
                   </button>
                 </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { LuWallet, LuPlus, LuLoader2 } from "react-icons/lu";
+import Link from "next/link";
+import { LuWallet, LuPlus, LuLoader2, LuHistory } from "react-icons/lu";
 import { useWalletBalance } from "~/hooks/useApi";
 import TopUpModal from "./TopUpModal";
 
@@ -145,6 +146,14 @@ export default function WalletDisplay({
           <LuPlus className="h-4 w-4" />
           Add Money
         </button>
+
+        <Link
+          href="/wallet"
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-gray-200 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+        >
+          <LuHistory className="h-3.5 w-3.5" />
+          View transactions
+        </Link>
       </div>
 
       <TopUpModal

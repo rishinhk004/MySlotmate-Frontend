@@ -41,6 +41,12 @@ export default function ActivitiesPage() {
     string | null
   >(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  // refund-destination picker — see backend bookingService.RefundDestination.
+  // "wallet" keeps the money in the user's wallet; "source" additionally
+  // refunds the funding top-up back to the original card/UPI via Razorpay.
+  const [refundDestination, setRefundDestination] = useState<
+    "wallet" | "source"
+  >("wallet");
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("msm_user_id");
@@ -92,9 +98,15 @@ export default function ActivitiesPage() {
       await cancelBooking.mutateAsync({
         bookingId: activeCancelBookingId,
         userId,
+        refundDestination,
       });
-      toast.success("Booking cancelled successfully.");
+      toast.success(
+        refundDestination === "source"
+          ? "Booking cancelled. Refund sent to your card (may take 5–7 working days)."
+          : "Booking cancelled. Refund added to your wallet.",
+      );
       setActiveCancelBookingId(null);
+      setRefundDestination("wallet"); // reset for next use
     } catch (err) {
       console.error("Cancellation error:", err);
       toast.error("Failed to cancel booking. Please try again.");
@@ -383,10 +395,57 @@ export default function ActivitiesPage() {
             <h3 className="mb-2 text-lg font-bold text-gray-900">
               Cancel Booking?
             </h3>
-            <p className="mb-6 text-sm leading-relaxed text-gray-500">
+            <p className="mb-4 text-sm leading-relaxed text-gray-500">
               Are you sure you want to cancel this booking? This action will
               notify the host and may be subject to cancellation policies.
             </p>
+
+            {/* Refund destination picker — comment out this block to disable
+                source refund for users (keeping wallet-only as default). */}
+            <fieldset className="mb-6">
+              <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Refund destination
+              </legend>
+              <label className="mb-2 flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="refund-destination"
+                  value="wallet"
+                  checked={refundDestination === "wallet"}
+                  onChange={() => setRefundDestination("wallet")}
+                  className="mt-0.5 h-4 w-4 accent-red-500"
+                  disabled={isCancelling}
+                />
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">
+                    Refund to wallet
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    Instant. Use for another booking.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="refund-destination"
+                  value="source"
+                  checked={refundDestination === "source"}
+                  onChange={() => setRefundDestination("source")}
+                  className="mt-0.5 h-4 w-4 accent-red-500"
+                  disabled={isCancelling}
+                />
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-gray-900">
+                    Refund to original card/UPI
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    Takes 5–7 working days. Falls back to wallet if not
+                    available.
+                  </span>
+                </span>
+              </label>
+            </fieldset>
 
             <div className="flex gap-3">
               <button
