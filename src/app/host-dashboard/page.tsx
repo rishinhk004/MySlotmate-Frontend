@@ -236,6 +236,15 @@ export default function HostDashboardPage() {
   const [user] = useAuthState(auth);
   const firstName = user?.displayName?.split(" ")[0] ?? "Host";
 
+  const [idToken, setIdToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (user) {
+      void user.getIdToken().then(setIdToken);
+    } else {
+      setIdToken(null);
+    }
+  }, [user]);
+
   const [userId, setUserId] = useState<string | null>(null);
   const [storedHostId, setStoredHostId] = useState<string | null>(null);
   useEffect(() => {
@@ -252,7 +261,7 @@ export default function HostDashboardPage() {
 
   const { data: calendarEvents } = useCalendarEvents(storedHostId);
   const { data: todayScheduleData } = useTodaySchedule(storedHostId);
-  const { data: payoutHistory } = usePayoutHistory(storedHostId);
+  const { data: payoutHistory } = usePayoutHistory(storedHostId, idToken);
 
   const error = !storedHostId
     ? "No host profile found. Please apply as a host first."

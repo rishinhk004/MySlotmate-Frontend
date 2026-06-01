@@ -299,15 +299,18 @@ export default function ActivitiesPage() {
                       )}
 
                       {(booking.status === "confirmed" ||
-                        booking.status === "pending") && (
-                        <button
-                          onClick={() => setActiveCancelBookingId(booking.id)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-red-100 bg-red-50/50 px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
-                        >
-                          <FiXCircle className="h-4 w-4" />
-                          Cancel Booking
-                        </button>
-                      )}
+                        booking.status === "pending") &&
+                        new Date(booking.occurrence_date) > new Date() && (
+                          <button
+                            onClick={() =>
+                              setActiveCancelBookingId(booking.id)
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg border border-red-100 bg-red-50/50 px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
+                          >
+                            <FiXCircle className="h-4 w-4" />
+                            Cancel Booking
+                          </button>
+                        )}
                     </div>
                   </div>
                 </div>

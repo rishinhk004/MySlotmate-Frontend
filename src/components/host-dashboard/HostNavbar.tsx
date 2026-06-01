@@ -252,7 +252,7 @@ export default function HostNavbar() {
                               <span className="flex items-center gap-3">
                                 <LuCalendarDays className="h-5 w-5 text-gray-600" />
                                 View all bookings
-                              </span>
+                              </span>ok
                               <FiChevronRight className="h-4 w-4 text-gray-400" />
                             </Link>
                             <Link

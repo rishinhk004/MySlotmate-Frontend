@@ -634,13 +634,26 @@ export function unpublishBlog(blogId: string, idToken: string) {
 /* ------------------------------------------------------------------ */
 
 export interface HostEarningsDTO {
-  id: string;
-  host_id: string;
+  // Live numbers computed from the bookings table (see backend
+  // GetHostEarningsBreakdown). Always satisfy:
+  //   total_earnings_cents = pending_clearance_cents + available_balance_cents + in_flight_payouts_cents
+  //   current_balance_cents = total_earnings_cents - in_flight_payouts_cents
+  //                         = pending_clearance_cents + available_balance_cents
+
+  /** Lifetime net earnings (refunds / cancellations already deducted). */
   total_earnings_cents: number;
+  /** Withdrawable right now: confirmed bookings whose event has happened,
+   *  minus payouts in flight or completed. */
+  available_balance_cents: number;
+  /** Locked because the event has not happened yet. */
   pending_clearance_cents: number;
+  /** Still owed to the host = total − paid out. */
+  current_balance_cents: number;
+  /** Already paid out or in flight (pending / processing / completed payouts). */
+  in_flight_payouts_cents: number;
+
   estimated_clearance_at: string | null;
-  created_at: string;
-  updated_at: string;
+  platform_fee?: { host_percentage: number; platform_percentage: number };
 }
 
 export interface HostDashboardDTO {
@@ -1125,60 +1138,127 @@ export function getWalletTransactions(
   );
 }
 
+// NOTE: all /payouts/* endpoints are auth.RequireUser-protected (F6). They
+// must send `Authorization: Bearer <firebase-id-token>` or the backend returns
+// 401 and React Query falls back to undefined (showing 0/empty everywhere).
+// The body/URL `host_id` fields are now redundant — backend derives host from
+// the auth token — but kept for backward compat with existing callers.
+
 /** POST /payouts/methods — add a payout method */
-export function addPayoutMethod(body: AddPayoutMethodPayload) {
+export function addPayoutMethod(
+  body: AddPayoutMethodPayload,
+  idToken: string,
+) {
   return apiFetch<PayoutMethodDTO>("/payouts/methods", {
     method: "POST",
     data: body,
+    headers: getAuthHeader(idToken),
   });
 }
 
 /** GET /payouts/methods/{hostID} — list payout methods */
-export function getPayoutMethods(hostId: string) {
-  return apiFetch<PayoutMethodDTO[]>(`/payouts/methods/${hostId}`);
+export function getPayoutMethods(hostId: string, idToken: string) {
+  return apiFetch<PayoutMethodDTO[]>(`/payouts/methods/${hostId}`, {
+    headers: getAuthHeader(idToken),
+  });
 }
 
 /** PUT /payouts/methods/{methodID}/primary — set primary payout method */
-export function setPrimaryPayoutMethod(methodId: string, hostId: string) {
+export function setPrimaryPayoutMethod(
+  methodId: string,
+  hostId: string,
+  idToken: string,
+) {
   return apiFetch<{ message: string }>(`/payouts/methods/${methodId}/primary`, {
     method: "PUT",
     data: { host_id: hostId },
+    headers: getAuthHeader(idToken),
   });
 }
 
 /** DELETE /payouts/methods/{methodID}?host_id=<uuid> */
-export function deletePayoutMethod(methodId: string, hostId: string) {
+export function deletePayoutMethod(
+  methodId: string,
+  hostId: string,
+  idToken: string,
+) {
   return apiFetch<{ message: string }>(`/payouts/methods/${methodId}`, {
     method: "DELETE",
     params: { host_id: hostId },
+    headers: getAuthHeader(idToken),
   });
 }
 
 /** POST /payouts/withdraw — request a payout withdrawal */
-export function withdraw(body: {
-  host_id: string;
-  amount_cents: number;
-  idempotency_key: string;
-  payout_method_id?: string;
-}) {
+export function withdraw(
+  body: {
+    host_id: string;
+    amount_cents: number;
+    idempotency_key: string;
+    payout_method_id?: string;
+  },
+  idToken: string,
+) {
   return apiFetch<PaymentDTO>("/payouts/withdraw", {
     method: "POST",
     data: body,
+    headers: getAuthHeader(idToken),
   });
 }
 
 /** GET /payouts/earnings/{hostID} — earnings summary */
-export function getEarnings(hostId: string) {
-  return apiFetch<HostEarningsDTO>(`/payouts/earnings/${hostId}`);
+export function getEarnings(hostId: string, idToken: string) {
+  return apiFetch<HostEarningsDTO>(`/payouts/earnings/${hostId}`, {
+    headers: getAuthHeader(idToken),
+  });
+}
+
+/** One row of the host's sales history — a booking made on one of their
+ *  events, joined with the buyer and event for display. */
+export interface HostSaleDTO {
+  BookingID: string;
+  EventID: string;
+  EventTitle: string;
+  BuyerUserID: string;
+  BuyerName: string;
+  BuyerEmail: string;
+  BuyerAvatarURL: string | null;
+  OccurrenceDate: string;
+  Quantity: number;
+  AmountCents: number;
+  NetEarningCents: number | null;
+  ServiceFeeCents: number | null;
+  Status: "pending" | "confirmed" | "cancelled" | "refunded";
+  CreatedAt: string;
+  CancelledAt: string | null;
+}
+
+/** GET /payouts/sales — list of bookings on this host's events.
+ *  `fromDate` is an RFC3339 timestamp; sales created before it are excluded.
+ *  Pass undefined for all-time. */
+export function getHostSales(
+  idToken: string,
+  opts?: { limit?: number; offset?: number; fromDate?: string },
+) {
+  const params: Record<string, string | number> = {};
+  if (opts?.limit !== undefined) params.limit = opts.limit;
+  if (opts?.offset !== undefined) params.offset = opts.offset;
+  if (opts?.fromDate) params.from_date = opts.fromDate;
+  return apiFetch<HostSaleDTO[]>("/payouts/sales", {
+    params,
+    headers: getAuthHeader(idToken),
+  });
 }
 
 /** GET /payouts/history/{hostID} — paginated payout history */
 export function getPayoutHistory(
   hostId: string,
+  idToken: string,
   pagination?: { limit?: number; offset?: number },
 ) {
   return apiFetch<PaymentDTO[]>(`/payouts/history/${hostId}`, {
     params: pagination,
+    headers: getAuthHeader(idToken),
   });
 }
 

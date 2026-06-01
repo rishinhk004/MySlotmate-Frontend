@@ -2,19 +2,25 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "~/utils/firebase";
 import { HostNavbar } from "~/components/host-dashboard";
 import Breadcrumb from "~/components/Breadcrumb";
 import {
   useEarnings,
+  useEventsByHost,
+  useInfiniteHostSales,
   usePayoutHistory,
   usePayoutMethods,
 } from "~/hooks/useApi";
+import type { HostSaleDTO } from "~/lib/api";
 import { format } from "date-fns";
 import {
   FiCreditCard,
   FiClock,
   FiFilter,
   FiCheck,
+  FiSearch,
   FiTrash2,
   FiX,
   FiAlertCircle,
@@ -37,28 +43,46 @@ interface AddMethodForm {
 // ─── API helpers ──────────────────────────────────────────────────────────────
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-async function apiPost(path: string, body: object) {
+// All three helpers send `Authorization: Bearer <idToken>` so they pass
+// the auth.RequireUser middleware on /payouts/* (F6). Callers MUST pass a
+// non-null token — guard in the handler before invoking.
+
+function authHeaders(idToken: string): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${idToken}`,
+  };
+}
+
+async function apiPost(path: string, body: object, idToken: string) {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(idToken),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
   return null;
 }
 
-async function apiPut(path: string, body: object): Promise<null> {
+async function apiPut(
+  path: string,
+  body: object,
+  idToken: string,
+): Promise<null> {
   const res = await fetch(`${BASE}${path}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(idToken),
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(await res.text());
   return null;
 }
 
-async function apiDelete(path: string): Promise<null> {
-  const res = await fetch(`${BASE}${path}`, { method: "DELETE" });
+async function apiDelete(path: string, idToken: string): Promise<null> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
   if (!res.ok) throw new Error(await res.text());
   return null;
 }
@@ -135,6 +159,18 @@ export default function HostEarningsPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  // Firebase ID token — F6 made /payouts/* auth-protected, so every read needs
+  // to send Authorization: Bearer <token>.
+  const [authUser] = useAuthState(auth);
+  const [idToken, setIdToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (authUser) {
+      void authUser.getIdToken().then(setIdToken);
+    } else {
+      setIdToken(null);
+    }
+  }, [authUser]);
+
   useEffect(() => {
     setHostId(localStorage.getItem("msm_host_id"));
   }, []);
@@ -143,17 +179,92 @@ export default function HostEarningsPage() {
     data: earnings,
     isLoading: loadingEarnings,
     refetch: refetchEarnings,
-  } = useEarnings(hostId);
+  } = useEarnings(hostId, idToken);
   const {
     data: payoutHistory,
     isLoading: loadingHistory,
     refetch: refetchHistory,
-  } = usePayoutHistory(hostId, { limit: 50, offset: 0 });
+  } = usePayoutHistory(hostId, idToken, { limit: 50, offset: 0 });
   const {
     data: payoutMethods,
     isLoading: loadingMethods,
     refetch: refetchMethods,
-  } = usePayoutMethods(hostId);
+  } = usePayoutMethods(hostId, idToken);
+  // ── Sales — phase 1 future-proofing ─────────────────────────────────────
+  // Date range (default last 90 days; "all" loads everything).
+  const [dateRange, setDateRange] = useState<"90d" | "all">("90d");
+  const fromDateISO = useMemo(() => {
+    if (dateRange === "all") return undefined;
+    const d = new Date();
+    d.setDate(d.getDate() - 90);
+    return d.toISOString();
+  }, [dateRange]);
+
+  // Infinite-query pagination — loads 50 sales at a time on demand.
+  const salesQuery = useInfiniteHostSales(idToken, fromDateISO, 50);
+  const loadingSales = salesQuery.isLoading;
+  // Flatten all loaded pages into one list (preserves newest-first order).
+  const sales = useMemo<HostSaleDTO[]>(
+    () =>
+      salesQuery.data?.pages.flatMap(
+        (page) => page.data ?? [],
+      ) ?? [],
+    [salesQuery.data],
+  );
+
+  // Host's events — fed into the event filter dropdown.
+  const { data: hostEvents } = useEventsByHost(hostId);
+
+  // Filter chip + per-status totals + search + event filter.
+  const [salesFilter, setSalesFilter] = useState<
+    "all" | "confirmed" | "refunded"
+  >("all");
+  const [salesSearch, setSalesSearch] = useState("");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+
+  const salesTotals = useMemo(() => {
+    const out = {
+      confirmedCount: 0,
+      confirmedCents: 0,
+      refundedCount: 0,
+      refundedCents: 0,
+      pendingCount: 0,
+      pendingCents: 0,
+    };
+    sales.forEach((s) => {
+      const net = s.NetEarningCents ?? 0;
+      if (s.Status === "confirmed") {
+        out.confirmedCount += 1;
+        out.confirmedCents += net;
+      } else if (s.Status === "cancelled" || s.Status === "refunded") {
+        out.refundedCount += 1;
+        out.refundedCents += net;
+      } else {
+        out.pendingCount += 1;
+        out.pendingCents += net;
+      }
+    });
+    return out;
+  }, [sales]);
+
+  const visibleSales = useMemo(() => {
+    const q = salesSearch.trim().toLowerCase();
+    return sales.filter((s) => {
+      if (salesFilter === "confirmed" && s.Status !== "confirmed") return false;
+      if (
+        salesFilter === "refunded" &&
+        s.Status !== "cancelled" &&
+        s.Status !== "refunded"
+      )
+        return false;
+      if (eventFilter !== "all" && s.EventID !== eventFilter) return false;
+      if (q) {
+        const hay = `${s.BuyerName} ${s.BuyerEmail}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [sales, salesFilter, salesSearch, eventFilter]);
 
   // ── Currency formatter (INR) ──
   const fmtCurrency = useMemo(() => {
@@ -173,7 +284,14 @@ export default function HostEarningsPage() {
     [payoutHistory],
   );
 
-  const availableBalance = earnings?.total_earnings_cents ?? 0;
+  // Earnings figures — sourced from the bookings table (see backend
+  // GetHostEarningsBreakdown). Defaults to 0 while the API is loading or the
+  // user isn't yet authenticated.
+  const totalEarnings = earnings?.total_earnings_cents ?? 0;
+  const availableBalance = earnings?.available_balance_cents ?? 0;
+  const pendingClearance = earnings?.pending_clearance_cents ?? 0;
+  const currentBalance = earnings?.current_balance_cents ?? 0;
+  const inFlightPayouts = earnings?.in_flight_payouts_cents ?? 0;
 
   const platformFeePercent = 30;
   const hostPercent = 100 - platformFeePercent;
@@ -207,7 +325,8 @@ export default function HostEarningsPage() {
       } else {
         body.upi_id = addForm.upi_id;
       }
-      await apiPost("/payouts/methods", body);
+      if (!idToken) throw new Error("Not signed in.");
+      await apiPost("/payouts/methods", body, idToken);
       setActionSuccess("Payout method added successfully.");
       setShowAddModal(false);
       void refetchMethods?.();
@@ -233,9 +352,11 @@ export default function HostEarningsPage() {
     setActionLoading(true);
     clearFeedback();
     try {
+      if (!idToken) throw new Error("Not signed in.");
       await apiPut(
         `/payouts/methods/${methodId}/primary?host_id=${hostId}`,
         {},
+        idToken,
       );
       setActionSuccess("Primary payout method updated.");
       await refetchMethods?.();
@@ -252,7 +373,8 @@ export default function HostEarningsPage() {
     setActionLoading(true);
     clearFeedback();
     try {
-      await apiDelete(`/payouts/methods/${methodId}?host_id=${hostId}`);
+      if (!idToken) throw new Error("Not signed in.");
+      await apiDelete(`/payouts/methods/${methodId}?host_id=${hostId}`, idToken);
       setActionSuccess("Payout method removed.");
       setShowDeleteConfirm(null);
       void refetchMethods?.();
@@ -280,10 +402,12 @@ export default function HostEarningsPage() {
     setActionLoading(true);
     clearFeedback();
     try {
-      await apiPost("/payouts/withdraw", {
-        host_id: hostId,
-        amount_cents: amountCents,
-      });
+      if (!idToken) throw new Error("Not signed in.");
+      await apiPost(
+        "/payouts/withdraw",
+        { host_id: hostId, amount_cents: amountCents },
+        idToken,
+      );
       setActionSuccess(
         `Payout of ${fmtCurrency(amountCents)} requested successfully.`,
       );
@@ -372,30 +496,58 @@ export default function HostEarningsPage() {
 
         {!isLoading && (
           <>
-            {/* ── Stat cards ── */}
-            <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-              {/* Total Earnings */}
+            {/* ── Earnings: 4-card grid ─────────────────────────────────────
+                Lifetime revenue (all time) │ Available balance (still owed)
+                Redeemable balance (event done, can withdraw NOW) │ Pending
+                The four numbers always satisfy:
+                  Lifetime    = Pending + Redeemable + InFlight
+                  Available   = Lifetime − InFlight = Pending + Redeemable
+            */}
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {/* Lifetime revenue */}
               <div className="rounded-xl border border-gray-200 bg-white p-5">
                 <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   <span className="text-base">₹</span>
-                  Total Earnings
+                  Lifetime Revenue
                 </div>
                 <p className="mt-3 text-3xl font-bold text-gray-900">
-                  {fmtCurrency(earnings?.total_earnings_cents ?? 0)}
+                  {fmtCurrency(totalEarnings)}
                 </p>
-                <p className="mt-1 flex items-center gap-1 text-xs text-green-600">
-                  <span>↑</span> +12% from last month
+                <p className="mt-2 text-xs text-gray-500">
+                  All-time net earnings, after refunds.
                 </p>
               </div>
 
-              {/* Available Balance */}
-              <div className="relative rounded-xl border-2 border-[#0094CA] bg-white p-5">
-                <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-[#0094CA] uppercase">
+              {/* Available balance — still owed (Pending + Redeemable) */}
+              <div className="rounded-xl border border-gray-200 bg-white p-5">
+                <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   <LuWallet className="h-4 w-4" />
                   Available Balance
                 </div>
                 <p className="mt-3 text-3xl font-bold text-gray-900">
+                  {fmtCurrency(currentBalance)}
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  Total still owed to you — pending + redeemable.
+                </p>
+                {inFlightPayouts > 0 && (
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Paid out / in flight: {fmtCurrency(inFlightPayouts)}
+                  </p>
+                )}
+              </div>
+
+              {/* Redeemable balance — event has happened, can withdraw NOW */}
+              <div className="relative rounded-xl border-2 border-[#0094CA] bg-white p-5">
+                <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-[#0094CA] uppercase">
+                  <LuWallet className="h-4 w-4" />
+                  Redeemable Balance
+                </div>
+                <p className="mt-3 text-3xl font-bold text-gray-900">
                   {fmtCurrency(availableBalance)}
+                </p>
+                <p className="mt-2 text-xs text-gray-500">
+                  Event has happened — ready to withdraw.
                 </p>
                 <button
                   onClick={() => {
@@ -409,22 +561,332 @@ export default function HostEarningsPage() {
                 </button>
               </div>
 
-              {/* Pending Clearance */}
+              {/* Pending — event hasn't happened yet */}
               <div className="rounded-xl border border-gray-200 bg-white p-5">
                 <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">
                   <FiClock className="h-4 w-4" />
-                  Pending Clearance
+                  Pending
                 </div>
                 <p className="mt-3 text-3xl font-bold text-gray-400">
-                  {fmtCurrency(earnings?.pending_clearance_cents ?? 0)}
+                  {fmtCurrency(pendingClearance)}
                 </p>
-                {earnings?.estimated_clearance_at && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    Est. arrival:{" "}
+                <p className="mt-2 text-xs text-gray-500">
+                  Locked until the booked event has happened.
+                </p>
+                {earnings?.estimated_clearance_at && pendingClearance > 0 && (
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Next clearance ≈{" "}
                     {format(new Date(earnings.estimated_clearance_at), "MMM d")}
                   </p>
                 )}
               </div>
+            </div>
+
+            {/* ── Sales — per-booking breakdown ─────────────────────────────
+                "Where does this ₹X come from?" — every ticket purchase on
+                this host's events, with buyer name, event title, occurrence,
+                amount the customer paid, and the host's net share.            */}
+            <div className="mb-6 rounded-xl border border-gray-200 bg-white">
+              {/* Header */}
+              <div className="border-b border-gray-100 px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Sales
+                    </h3>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Bookings on your events — where each rupee of your
+                      earnings came from.
+                    </p>
+                  </div>
+                  {sales && sales.length > 0 && (
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
+                      {sales.length} {sales.length === 1 ? "sale" : "sales"}
+                    </span>
+                  )}
+                </div>
+
+                {/* Math band — explains exactly where the lifetime revenue
+                    comes from. Only Confirmed (and Pending) sales count;
+                    Refunded sales are listed for transparency but credit ₹0. */}
+                {sales && sales.length > 0 && (
+                  <div className="mt-4 grid grid-cols-1 gap-2 rounded-lg bg-gray-50 p-3 text-xs sm:grid-cols-3">
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start">
+                      <span className="font-medium text-gray-500">
+                        Confirmed
+                      </span>
+                      <span className="font-semibold text-green-700">
+                        +{fmtCurrency(salesTotals.confirmedCents)}{" "}
+                        <span className="font-normal text-gray-400">
+                          ({salesTotals.confirmedCount})
+                        </span>
+                      </span>
+                    </div>
+                    {salesTotals.pendingCount > 0 && (
+                      <div className="flex items-center justify-between sm:flex-col sm:items-start">
+                        <span className="font-medium text-gray-500">
+                          Pending
+                        </span>
+                        <span className="font-semibold text-amber-700">
+                          +{fmtCurrency(salesTotals.pendingCents)}{" "}
+                          <span className="font-normal text-gray-400">
+                            ({salesTotals.pendingCount})
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start">
+                      <span className="font-medium text-gray-500">
+                        Refunded
+                      </span>
+                      <span className="font-semibold text-gray-400">
+                        ₹0{" "}
+                        <span className="font-normal text-gray-400">
+                          ({salesTotals.refundedCount} reversed,{" "}
+                          {fmtCurrency(salesTotals.refundedCents)})
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Filter chips + controls */}
+                {sales && sales.length > 0 && (
+                  <>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      {(
+                        [
+                          ["all", "All", sales.length],
+                          [
+                            "confirmed",
+                            "Confirmed",
+                            salesTotals.confirmedCount,
+                          ],
+                          [
+                            "refunded",
+                            "Refunded",
+                            salesTotals.refundedCount,
+                          ],
+                        ] as const
+                      ).map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setSalesFilter(key)}
+                          className={`rounded-full px-3 py-1 font-medium transition ${
+                            salesFilter === key
+                              ? "bg-[#0094CA] text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          }`}
+                        >
+                          {label} ({count})
+                        </button>
+                      ))}
+                      <div className="ml-auto flex items-center gap-1 rounded-full bg-gray-100 p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setDateRange("90d")}
+                          className={`rounded-full px-2.5 py-0.5 transition ${
+                            dateRange === "90d"
+                              ? "bg-white font-semibold text-gray-900 shadow-sm"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          Last 90 days
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDateRange("all")}
+                          className={`rounded-full px-2.5 py-0.5 transition ${
+                            dateRange === "all"
+                              ? "bg-white font-semibold text-gray-900 shadow-sm"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          All time
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search box + event filter */}
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_220px]">
+                      <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="search"
+                          value={salesSearch}
+                          onChange={(e) => setSalesSearch(e.target.value)}
+                          placeholder="Search by buyer name or email…"
+                          className="w-full rounded-lg border border-gray-200 bg-white pl-8 pr-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-[#0094CA] focus:outline-none focus:ring-1 focus:ring-[#0094CA]"
+                        />
+                      </div>
+                      <select
+                        value={eventFilter}
+                        onChange={(e) => setEventFilter(e.target.value)}
+                        className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-[#0094CA] focus:outline-none focus:ring-1 focus:ring-[#0094CA]"
+                      >
+                        <option value="all">All events</option>
+                        {(hostEvents ?? []).map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {loadingSales ? (
+                <div className="px-5 py-8 text-center text-sm text-gray-400">
+                  Loading sales…
+                </div>
+              ) : !sales || sales.length === 0 ? (
+                <div className="px-5 py-10 text-center">
+                  <p className="text-sm font-medium text-gray-700">
+                    No sales yet
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Once people book your experiences, every ticket purchase
+                    will show up here.
+                  </p>
+                </div>
+              ) : visibleSales.length === 0 ? (
+                <div className="px-5 py-8 text-center text-sm text-gray-400">
+                  No sales match this filter.
+                </div>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {visibleSales.map((s: HostSaleDTO) => {
+                    const isConfirmed = s.Status === "confirmed";
+                    const isPending = s.Status === "pending";
+                    const isRefunded =
+                      s.Status === "cancelled" || s.Status === "refunded";
+                    const statusTone = isConfirmed
+                      ? "bg-green-50 text-green-700"
+                      : isRefunded
+                        ? "bg-rose-50 text-rose-700"
+                        : "bg-amber-50 text-amber-700";
+                    const statusLabel =
+                      s.Status.charAt(0).toUpperCase() + s.Status.slice(1);
+
+                    const initials = (s.BuyerName || s.BuyerEmail || "?")
+                      .split(" ")
+                      .map((p) => p[0])
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase();
+
+                    return (
+                      <li
+                        key={s.BookingID}
+                        className={`grid grid-cols-12 gap-3 px-5 py-4 transition hover:bg-gray-50 ${
+                          isRefunded ? "opacity-70" : ""
+                        }`}
+                      >
+                        {/* Buyer */}
+                        <div className="col-span-12 flex items-center gap-3 sm:col-span-4">
+                          {s.BuyerAvatarURL ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={s.BuyerAvatarURL}
+                              alt=""
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e6f8ff] text-xs font-semibold text-[#0094CA]">
+                              {initials}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-900">
+                              {s.BuyerName || "—"}
+                            </p>
+                            <p className="truncate text-[11px] text-gray-500">
+                              {s.BuyerEmail}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Event + occurrence */}
+                        <div className="col-span-12 min-w-0 sm:col-span-4">
+                          <p className="truncate text-sm font-medium text-gray-900">
+                            {s.EventTitle}
+                          </p>
+                          <p className="truncate text-[11px] text-gray-500">
+                            {format(new Date(s.OccurrenceDate), "d MMM yyyy, p")}
+                            {" · "}
+                            {s.Quantity}{" "}
+                            {s.Quantity === 1 ? "ticket" : "tickets"}
+                          </p>
+                        </div>
+
+                        {/* Amount + your share — the loud bit. */}
+                        <div className="col-span-6 text-right sm:col-span-2">
+                          <p className="text-sm font-semibold text-gray-900">
+                            Paid {fmtCurrency(s.AmountCents)}
+                          </p>
+                          {isRefunded ? (
+                            <p className="text-[11px] font-semibold text-rose-600">
+                              ₹0 to you
+                              <span className="ml-1 font-normal text-gray-400">
+                                · refunded
+                              </span>
+                            </p>
+                          ) : isPending ? (
+                            <p className="text-[11px] font-semibold text-amber-700">
+                              +{fmtCurrency(s.NetEarningCents ?? 0)} pending
+                            </p>
+                          ) : (
+                            <p className="text-[11px] font-semibold text-green-700">
+                              +{fmtCurrency(s.NetEarningCents ?? 0)} to you
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Status */}
+                        <div className="col-span-6 flex items-center justify-end sm:col-span-2">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusTone}`}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              {/* Load more — paginates the underlying infinite query. If the
+                  user has filtered/searched, the button still loads more
+                  *raw* rows from the backend, which are then re-filtered. */}
+              {sales.length > 0 && salesQuery.hasNextPage && (
+                <div className="border-t border-gray-100 px-5 py-3 text-center">
+                  <button
+                    type="button"
+                    onClick={() => void salesQuery.fetchNextPage()}
+                    disabled={salesQuery.isFetchingNextPage}
+                    className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {salesQuery.isFetchingNextPage
+                      ? "Loading…"
+                      : `Load more (${sales.length} loaded${
+                          visibleSales.length !== sales.length
+                            ? `, ${visibleSales.length} matching`
+                            : ""
+                        })`}
+                  </button>
+                </div>
+              )}
+              {sales.length > 0 && !salesQuery.hasNextPage && (
+                <div className="border-t border-gray-100 px-5 py-3 text-center text-[11px] text-gray-400">
+                  All {sales.length} sales loaded
+                  {visibleSales.length !== sales.length &&
+                    ` · ${visibleSales.length} matching the filters`}
+                </div>
+              )}
             </div>
 
             {/* ── Fee Breakdown + Payout Methods ── */}

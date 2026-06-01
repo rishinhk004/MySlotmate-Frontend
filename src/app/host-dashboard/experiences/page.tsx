@@ -1,6 +1,7 @@
 "use client";
 
-import { useEventsByHost, useMyHost, useResumeEvent, usePauseEvent, useEventOccurrencesForHost } from "~/hooks/useApi";
+import { useEventsByHost, useMyHost, useResumeEvent, usePauseEvent, useEventOccurrencesForHost, useEventAttendees } from "~/hooks/useApi";
+import type { BookingDTO } from "~/lib/api";
 import type { OccurrenceAvailability } from "~/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
@@ -16,6 +17,7 @@ import {
   FiPause,
   FiPlay,
   FiShield,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { LuBookOpen, LuRotateCcw } from "react-icons/lu";
 import { toast } from "sonner";
@@ -140,6 +142,29 @@ function ExperienceCard({
   const isPaused = event.status === "paused";
   const isDraft = event.status === "draft";
   const isLive = event.status === "live";
+
+  // Active (pending/confirmed) bookings on this event — only fetched while
+  // the Delete modal is open, to power the "you're about to refund N
+  // attendees" warning. Backend's CancelEvent skips past confirmed bookings
+  // (those attendees already attended), so the count below matches what the
+  // backend will actually refund.
+  const { data: deleteAttendees } = useEventAttendees(
+    showDeleteConfirm ? event.id : null,
+  );
+  const deleteAffected = useMemo(() => {
+    const now = new Date();
+    const rows = (deleteAttendees ?? []).filter((b: BookingDTO) => {
+      if (b.status !== "confirmed" && b.status !== "pending") return false;
+      return new Date(b.occurrence_date) >= now;
+    });
+    const totalCents = rows.reduce(
+      (sum: number, b: BookingDTO) => sum + (b.amount_cents ?? 0),
+      0,
+    );
+    return { count: rows.length, totalCents };
+  }, [deleteAttendees]);
+  const fmtRupees = (cents: number) =>
+    `₹${(cents / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
   // Pause shape: full series pause vs partial (from-session or specific-dates)
   const hasPausedFrom = !!event.paused_from;
@@ -381,10 +406,42 @@ function ExperienceCard({
             <h2 className="mb-2 text-xl font-bold text-gray-900">
               Delete {event.title}?
             </h2>
-            <p className="mb-6 text-gray-500">
-              This will permanently delete your experience. All confirmed
-              bookings will be refunded.
+            <p className="mb-4 text-gray-500">
+              This will cancel and refund every upcoming attendee (money goes
+              back to their wallet) and then remove the experience from your
+              account. Past attendees (if any) keep their bookings — they
+              already attended, so we don&apos;t refund them.
             </p>
+
+            {/* Refund warning — shown only when there's actually money on the
+                line. Powered by useEventAttendees, scoped to upcoming bookings
+                so the number matches what the backend's CancelEvent will
+                refund (past confirmed bookings are skipped). */}
+            {deleteAffected.count > 0 ? (
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
+                <FiAlertTriangle
+                  className="mt-0.5 h-4 w-4 shrink-0 text-red-600"
+                  aria-hidden
+                />
+                <div className="text-xs leading-relaxed">
+                  <p className="font-semibold text-red-900">
+                    {deleteAffected.count}{" "}
+                    {deleteAffected.count === 1 ? "attendee" : "attendees"}{" "}
+                    will be refunded
+                  </p>
+                  <p className="mt-0.5 text-red-800">
+                    {fmtRupees(deleteAffected.totalCents)} will be credited
+                    back to{" "}
+                    {deleteAffected.count === 1 ? "their wallet" : "their wallets"}{" "}
+                    the moment you confirm. This cannot be undone.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-500">
+                No upcoming bookings — safe to delete.
+              </div>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
@@ -398,7 +455,28 @@ function ExperienceCard({
                   if (!_hostId) return;
                   setIsDeleting(true);
                   try {
-                    const response = await fetch(
+                    // Two-step: cancel (refunds every upcoming booking via the
+                    // F4 path on the backend, marks event status=cancelled),
+                    // then delete (now allowed because no active bookings
+                    // remain). Calling cancel on an event with no active
+                    // bookings is a no-op refund-wise — it just marks status.
+                    const cancelRes = await fetch(
+                      `${process.env.NEXT_PUBLIC_API_URL}/events/${event.id}/cancel`,
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ host_id: _hostId }),
+                      },
+                    );
+                    if (!cancelRes.ok) {
+                      const errBody = (await cancelRes.json().catch(() => ({}))) as { error?: string };
+                      throw new Error(
+                        errBody?.error ??
+                          "Could not refund upcoming attendees — please try again.",
+                      );
+                    }
+
+                    const delRes = await fetch(
                       `${process.env.NEXT_PUBLIC_API_URL}/events/${event.id}`,
                       {
                         method: "DELETE",
@@ -406,12 +484,18 @@ function ExperienceCard({
                         body: JSON.stringify({ host_id: _hostId }),
                       },
                     );
-
-                    if (!response.ok) {
-                      throw new Error("Failed to delete event");
+                    if (!delRes.ok) {
+                      // Refunds succeeded but the row couldn't be removed —
+                      // the event is already marked cancelled, so the host is
+                      // not stuck. Surface honestly.
+                      const errBody = (await delRes.json().catch(() => ({}))) as { error?: string };
+                      throw new Error(
+                        errBody?.error ??
+                          "Attendees were refunded, but the experience couldn't be fully removed. It's marked Cancelled — refresh to confirm.",
+                      );
                     }
 
-                    toast.success("Experience deleted successfully!");
+                    toast.success("Experience cancelled and removed. Refunds sent to attendees' wallets.");
                     // Invalidate every cache keyed off this host's events so
                     // the list, calendar, filtered views, and "today" widget
                     // all drop the deleted row immediately.
@@ -432,7 +516,11 @@ function ExperienceCard({
                     setShowDeleteConfirm(false);
                   } catch (err) {
                     console.error("Delete failed:", err);
-                    toast.error("Failed to delete event");
+                    const msg =
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to delete event";
+                    toast.error(msg);
                   } finally {
                     setIsDeleting(false);
                   }
@@ -440,7 +528,11 @@ function ExperienceCard({
                 disabled={isDeleting}
                 className="flex-1 rounded-lg bg-red-600 py-3 font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting
+                  ? "Cancelling…"
+                  : deleteAffected.count > 0
+                    ? `Delete & refund ${deleteAffected.count}`
+                    : "Delete"}
               </button>
             </div>
           </div>
@@ -796,6 +888,41 @@ function PauseModalContent({
   const { data: availability, isLoading: availLoading } =
     useEventOccurrencesForHost(event.id, hostId);
 
+  // Active bookings on this event (the attendees endpoint already filters to
+  // pending+confirmed on the backend). We use this to warn the host how many
+  // people will be refunded the moment they click "Pause Now".
+  const { data: attendees } = useEventAttendees(event.id);
+
+  // Compute who actually gets refunded given the host's current selection.
+  // Pause semantics match backend eventService.PauseEvent:
+  //   - "all" (full pause)        → every UPCOMING confirmed/pending booking
+  //   - "from <date>"             → bookings on or after that date
+  //   - "date <date>"             → bookings on exactly that date
+  const affected = useMemo(() => {
+    const now = new Date();
+    const target = selectedDate ? new Date(selectedDate) : null;
+    const rows = (attendees ?? []).filter((b: BookingDTO) => {
+      if (b.status !== "confirmed" && b.status !== "pending") return false;
+      const occ = new Date(b.occurrence_date);
+      if (option === "all") return occ >= now;
+      if (option === "from") return target ? occ >= target : false;
+      if (option === "date") {
+        if (!target) return false;
+        // same-day match (compare YYYY-MM-DD only)
+        return occ.toISOString().slice(0, 10) === target.toISOString().slice(0, 10);
+      }
+      return false;
+    });
+    const totalCents = rows.reduce(
+      (sum: number, b: BookingDTO) => sum + (b.amount_cents ?? 0),
+      0,
+    );
+    return { count: rows.length, totalCents };
+  }, [attendees, option, selectedDate]);
+
+  const fmtCurrency = (cents: number) =>
+    `₹${(cents / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8">
@@ -942,6 +1069,39 @@ function PauseModalContent({
           )}
         </div>
 
+        {/* Refund warning — count + total ₹ of bookings that will be cancelled
+            and refunded the moment "Pause Now" is clicked. Visible whenever an
+            option resolves to ≥1 affected booking. Helps the host avoid an
+            accidental mass refund. */}
+        {affected.count > 0 ? (
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <FiAlertTriangle
+              className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
+              aria-hidden
+            />
+            <div className="text-xs leading-relaxed">
+              <p className="font-semibold text-amber-900">
+                {affected.count}{" "}
+                {affected.count === 1 ? "attendee" : "attendees"} will be
+                refunded
+              </p>
+              <p className="mt-0.5 text-amber-800">
+                {fmtCurrency(affected.totalCents)} will be credited back to{" "}
+                their {affected.count === 1 ? "wallet" : "wallets"} — refunds
+                happen the moment you confirm. Past attendees (if any) are not
+                affected.
+              </p>
+            </div>
+          </div>
+        ) : (
+          (option === "all" ||
+            ((option === "from" || option === "date") && selectedDate)) && (
+            <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-500">
+              No upcoming bookings will be affected — safe to pause.
+            </div>
+          )
+        )}
+
         <div className="flex gap-3">
           <button
             onClick={onCancel}
@@ -956,7 +1116,9 @@ function PauseModalContent({
             }
             className="flex-1 rounded-lg bg-amber-600 py-3 font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
           >
-            Pause Now
+            {affected.count > 0
+              ? `Pause & refund ${affected.count}`
+              : "Pause Now"}
           </button>
         </div>
       </div>

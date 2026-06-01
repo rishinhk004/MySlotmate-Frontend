@@ -2,6 +2,7 @@
 
 import {
   useQuery,
+  useInfiniteQuery,
   useMutation,
   useQueryClient,
   type UseQueryResult,
@@ -440,34 +441,83 @@ export function useBooking(bookingId: string | null) {
   });
 }
 
-export function usePayoutMethods(hostId: string | null) {
+export function usePayoutMethods(
+  hostId: string | null,
+  idToken?: string | null,
+) {
   return useQuery({
-    queryKey: queryKeys.payoutMethods(hostId ?? ""),
-    queryFn: () => api.getPayoutMethods(hostId!),
-    enabled: !!hostId,
+    queryKey: [...queryKeys.payoutMethods(hostId ?? ""), idToken ?? ""] as const,
+    queryFn: () => api.getPayoutMethods(hostId!, idToken!),
+    enabled: !!hostId && !!idToken,
     staleTime: 2 * 60 * 1000,
     select: (res) => res.data,
   });
 }
 
-export function useEarnings(hostId: string | null) {
+export function useEarnings(hostId: string | null, idToken?: string | null) {
   return useQuery({
-    queryKey: queryKeys.earnings(hostId ?? ""),
-    queryFn: () => api.getEarnings(hostId!),
-    enabled: !!hostId,
+    queryKey: [...queryKeys.earnings(hostId ?? ""), idToken ?? ""] as const,
+    queryFn: () => api.getEarnings(hostId!, idToken!),
+    enabled: !!hostId && !!idToken,
     staleTime: 60 * 1000,
     select: (res) => res.data,
   });
 }
 
-export function usePayoutHistory(
-  hostId: string | null,
+export function useHostSales(
+  idToken?: string | null,
   pagination?: { limit?: number; offset?: number },
 ) {
   return useQuery({
-    queryKey: queryKeys.payoutHistory(hostId ?? ""),
-    queryFn: () => api.getPayoutHistory(hostId!, pagination),
-    enabled: !!hostId,
+    queryKey: ["hostSales", idToken ?? "", pagination] as const,
+    queryFn: () => api.getHostSales(idToken!, pagination),
+    enabled: !!idToken,
+    staleTime: 60 * 1000,
+    select: (res) => res.data,
+  });
+}
+
+/** Paginated, future-proof variant of useHostSales using useInfiniteQuery.
+ *  Loads `pageSize` rows per fetch; UI calls `fetchNextPage()` for "Load more".
+ *  `fromDate` is an optional RFC3339 cutoff. */
+export function useInfiniteHostSales(
+  idToken?: string | null,
+  fromDate?: string,
+  pageSize = 50,
+) {
+  return useInfiniteQuery({
+    queryKey: ["hostSales", "infinite", idToken ?? "", fromDate ?? ""] as const,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      api.getHostSales(idToken!, {
+        limit: pageSize,
+        offset: pageParam,
+        fromDate,
+      }),
+    enabled: !!idToken,
+    staleTime: 60 * 1000,
+    getNextPageParam: (lastPage, allPages) => {
+      const lastCount = lastPage?.data?.length ?? 0;
+      // Backend returned fewer than pageSize → no more rows.
+      if (lastCount < pageSize) return undefined;
+      return allPages.length * pageSize;
+    },
+  });
+}
+
+export function usePayoutHistory(
+  hostId: string | null,
+  idToken?: string | null,
+  pagination?: { limit?: number; offset?: number },
+) {
+  return useQuery({
+    queryKey: [
+      ...queryKeys.payoutHistory(hostId ?? ""),
+      idToken ?? "",
+      pagination,
+    ] as const,
+    queryFn: () => api.getPayoutHistory(hostId!, idToken!, pagination),
+    enabled: !!hostId && !!idToken,
     staleTime: 60 * 1000,
     select: (res) => res.data,
   });
@@ -1070,10 +1120,11 @@ export function useCancelBooking() {
 
 /* ═══ Payout Mutations ═════════════════════════════════════════ */
 
-export function useAddPayoutMethod() {
+export function useAddPayoutMethod(idToken: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: api.addPayoutMethod,
+    mutationFn: (body: api.AddPayoutMethodPayload) =>
+      api.addPayoutMethod(body, idToken!),
     onSuccess: (_data, variables) => {
       void qc.invalidateQueries({
         queryKey: queryKeys.payoutMethods(variables.host_id),
@@ -1082,32 +1133,33 @@ export function useAddPayoutMethod() {
   });
 }
 
-export function useSetPrimaryPayoutMethod() {
+export function useSetPrimaryPayoutMethod(idToken: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ methodId, hostId }: { methodId: string; hostId: string }) =>
-      api.setPrimaryPayoutMethod(methodId, hostId),
+      api.setPrimaryPayoutMethod(methodId, hostId, idToken!),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["payoutMethods"] });
     },
   });
 }
 
-export function useDeletePayoutMethod() {
+export function useDeletePayoutMethod(idToken: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ methodId, hostId }: { methodId: string; hostId: string }) =>
-      api.deletePayoutMethod(methodId, hostId),
+      api.deletePayoutMethod(methodId, hostId, idToken!),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["payoutMethods"] });
     },
   });
 }
 
-export function useWithdraw() {
+export function useWithdraw(idToken: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: api.withdraw,
+    mutationFn: (body: Parameters<typeof api.withdraw>[0]) =>
+      api.withdraw(body, idToken!),
     onSuccess: (_data, variables) => {
       void qc.invalidateQueries({
         queryKey: queryKeys.earnings(variables.host_id),
